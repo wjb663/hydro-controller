@@ -1,0 +1,26 @@
+Tasks
+Definine software actors (threads, interrupt service routines/handlers, callback functions) 
+And their methods for communication (event flags, semaphores, message queues), synchronization (mutexes) and timed delays. 
+
+**CREATE** Structure
+The structure of all S/W and peripheral H/W shall be mapped out before writing code. 
+This is a “boxes and arrows” diagram, where boxes represent actors and arrows represent activity relationships between them. 
+Each software actor (thread, interrupt service routine/handler, callback function), hardware actor (peripheral) must be represented, as well as how they communicate and synchronize. 
+S/W and H/W structure can be changed at any time during the project as long as the changes are logged as part of version control
+Documentation shall clearly follow and clearly indicate the S/W and H/W structure.
+
+**DECIDE/CREATE** Issue tracker
+Some form of collaborative issue tracking shall be used (GitHub, Team Charter Tab, etc)
+Issues shall include person, date, code version, description, resolution
+
+**INFO** RTOS Task Decomposition (can also be used for the Structure Documentation)
+The Seven-Step Process* 
+1. Identify the major components
+2. Draw a high-level block diagram
+3. Label the inputs
+4. Label the outputs
+5. Identify first-tier tasks
+6. Determine concurrency, dependencies, and data flow
+7. Identify second-tier tasks
+
+*Embedded Software Design, A Practical Approach to Architecture, Processes, and Coding Techniques, Jacob Beningo (Chapter 4, pg92), Beningo Embedded Group
