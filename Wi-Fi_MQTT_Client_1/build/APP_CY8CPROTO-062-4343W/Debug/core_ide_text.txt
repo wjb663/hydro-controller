@@ -1,0 +1,1 @@
+&&_MTB_CORE__IDE_OUTPUT_SYNC&&=--output-sync

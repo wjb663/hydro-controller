@@ -1,0 +1,4 @@
+UUID=&&PROJECT_UUID_CM4_0&&
+UUID=&&PROJECT_UUID&&
+TEMPLATE_REPLACE=../mtb_shared/recipe-make-cat1a/release-v2.1.1/make/scripts/interface_version_2/eclipse/CM4/KitProg3/single_core=.mtbLaunchConfigs
+TEMPLATE_REPLACE=../mtb_shared/recipe-make-cat1a/release-v2.1.1/make/scripts/interface_version_2/eclipse/CM4/KitProg3/any_core=.mtbLaunchConfigs
