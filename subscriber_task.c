@@ -58,6 +58,7 @@
 #include "cy_mqtt_api.h"
 #include "cy_retarget_io.h"
 
+#include "sensor_functions.h"
 
 /******************************************************************************
 * Macros
@@ -75,8 +76,6 @@
  * subscriber task.
  */
 #define SUBSCRIBER_TASK_QUEUE_LENGTH            (1u)
-
-
 
 /******************************************************************************
 * Global Variables
@@ -117,10 +116,7 @@ int pumpsOn = 0;
  * Function Name: subscriber_task
  ******************************************************************************
  * Summary:
- *  Task that sets up the user LED GPIO, subscribes to the specified MQTT topic,
- *  and controls the user LED based on the received commands over the message 
- *  queue. The task can also unsubscribe from the topic based on the commands
- *  via the message queue.
+ *  Calls function to subscribe to MQTT Topics. Contain the message queue
  *
  * Parameters:
  *  void *pvParameters : Task parameter defined during task creation (unused)
@@ -136,10 +132,6 @@ void subscriber_task(void *pvParameters)
     /* To avoid compiler warnings */
     (void) pvParameters;
 
-    /* Initialize the User LED. */
-    cyhal_gpio_init(CYBSP_USER_LED, CYHAL_GPIO_DIR_OUTPUT, CYHAL_GPIO_DRIVE_PULLUP,
-                    CYBSP_LED_STATE_OFF);
-
     /* Subscribe to the specified MQTT topic. */
     subscribe_to_topic();
 
@@ -154,10 +146,6 @@ void subscriber_task(void *pvParameters)
             {
                 case UPDATE_DEVICE_STATE:
                 {
-                    cyhal_gpio_write(CYBSP_USER_LED, subscriber_q_data.data);
-
-                    current_device_state = subscriber_q_data.data;
-
                     print_heap_usage("subscriber_task: After updating LED state");
                     break;
                 }
@@ -165,7 +153,7 @@ void subscriber_task(void *pvParameters)
         }
     }
 
-}
+} // end of subscriber_task function
 
 /******************************************************************************
  * Function Name: subscribe_to_topic
@@ -192,6 +180,7 @@ static void subscribe_to_topic(void)
     mqtt_task_cmd_t mqtt_task_cmd;
 
     /* Subscribe with the configured parameters. */
+    // subscribes to pH reading first, then EC_Reading, then pumpSeconds
     for (uint32_t retry_count = 0; retry_count < MAX_SUBSCRIBE_RETRIES; retry_count++)
     {
         result = cy_mqtt_subscribe(mqtt_connection, &subscribe_info, SUBSCRIPTION_COUNT);
@@ -202,22 +191,22 @@ static void subscribe_to_topic(void)
             subscribe_info.topic = MQTT_SUB_TOPIC_TWO;
             result = cy_mqtt_subscribe(mqtt_connection, &subscribe_info, SUBSCRIPTION_COUNT);
             if (result == CY_RSLT_SUCCESS)
-                        {
-                            printf("\nMQTT client subscribed to the topic '%.*s' successfully.\n",
-                                    subscribe_info.topic_len, subscribe_info.topic);
-                            // was giving me errors because i didnt change topic_len in struct
-                            subscribe_info.topic = MQTT_SUB_TOPIC_THREE;
-                                       result = cy_mqtt_subscribe(mqtt_connection, &subscribe_info, SUBSCRIPTION_COUNT);
-                                       if (result == CY_RSLT_SUCCESS)
-                                                   {
-                                                       printf("\nMQTT client subscribed to the topic '%.*s' successfully.\n",
-                                                               subscribe_info.topic_len, subscribe_info.topic);
-                                                       break;
-                                                   }
-                            break;
-                        }
-            break;
-        }
+            {
+            	printf("\nMQTT client subscribed to the topic '%.*s' successfully.\n",
+                       subscribe_info.topic_len, subscribe_info.topic);
+                // was giving me errors because i didnt change topic_len in struct
+                subscribe_info.topic = MQTT_SUB_TOPIC_THREE;
+                result = cy_mqtt_subscribe(mqtt_connection, &subscribe_info, SUBSCRIPTION_COUNT);
+                if (result == CY_RSLT_SUCCESS)
+                {
+                	printf("\nMQTT client subscribed to the topic '%.*s' successfully.\n",
+                           subscribe_info.topic_len, subscribe_info.topic);
+                    break;
+                }
+             break;
+         }
+         break;
+     }
 
         vTaskDelay(pdMS_TO_TICKS(MQTT_SUBSCRIBE_RETRY_INTERVAL_MS));
     }
@@ -231,10 +220,7 @@ static void subscribe_to_topic(void)
         mqtt_task_cmd = HANDLE_MQTT_SUBSCRIBE_FAILURE;
         xQueueSend(mqtt_task_q, &mqtt_task_cmd, portMAX_DELAY);
     }
-
-
-
-}
+} // end of subscribe_to_topic function
 
 /******************************************************************************
  * Function Name: mqtt_subscription_callback
@@ -270,25 +256,21 @@ void mqtt_subscription_callback(cy_mqtt_publish_info_t *received_msg_info)
 
 
     // if there's an upload to pump seconds topic, convert the payload to int and pass it to extern var payloadTimer
+    // payloadTimer is used in publisher_task.c publisher_task() switch statement
     if (strncmp(received_msg_info->topic, MQTT_SUB_TOPIC_THREE, received_msg_info->topic_len) == 0)
     {
-
     	int payloadTimer = atoi(received_msg_info->payload);
     	pumpSeconds = payloadTimer;
     	pumpsOn = 1;
-    	printf("\nPUMPING NOW V1.3");
+    	printf("\nPUMPING NOW");
     	printf("\nPump for %d seconds.", pumpSeconds);
-    	printf("\nPump timer function CALLED");
-    	// add some kind of timer functionality
     }
-
-
 
     print_heap_usage("MQTT subscription callback");
 
     /* Send the command and data to subscriber task queue */
     xQueueSend(subscriber_task_q, &subscriber_q_data, portMAX_DELAY);
-}
+} // end of mqtt_subscription_callback function
 
 
 /* [] END OF FILE */

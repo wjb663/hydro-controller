@@ -60,11 +60,11 @@
 #include "cy_mqtt_api.h"
 #include "cy_retarget_io.h"
 
+#include "sensor_functions.h"
+
 /******************************************************************************
 * Macros
 ******************************************************************************/
-/* Interrupt priority for User Button Input. */
-#define USER_BTN_INTR_PRIORITY          (3)
 
 /* The maximum number of times each PUBLISH in this example will be retried. */
 #define PUBLISH_RETRY_LIMIT             (10)
@@ -79,94 +79,26 @@
  */
 #define PUBLISHER_TASK_QUEUE_LENGTH     (3u)
 
-/* Macro for ADC Channel configuration*/
-#define SINGLE_CHANNEL 1
-#define MULTI_CHANNEL  2
-
-#define ADC_EXAMPLE_MODE SINGLE_CHANNEL
-
-#if defined(CY_DEVICE_PSOC6A512K)  /* if the target is CY8CPROTO-062S3-4343W or CY8CPROTO-064B0S3*/
-/* Channel 0 input pin */
-#define VPLUS_CHANNEL_0  (P10_3)
-#else
-#define VPLUS_CHANNEL_0  (P10_0)
-
-#define VPLUS_CHANNEL_1  (P10_4)
-#define VREF_CHANNEL_1   (P10_5)
-#endif
-
-#if ADC_EXAMPLE_MODE == MULTI_CHANNEL
-
-#if defined(CY_DEVICE_PSOC6A256K)  /* if the target is CY8CKIT-062S4 */
-/* Channel 1 VPLUS input pin */)
-/* Channel 1 VREF input pin */
-#define VREF_CHANNEL_1   (P10_2)
-#else
-/* Channel 1 VPLUS input pin */
-#define VPLUS_CHANNEL_1  (P10_4)
-/* Channel 1 VREF input pin */
-#define VREF_CHANNEL_1   (P10_5)
-#endif
-
-/* Number of scans every time ADC read is initiated */
-#define NUM_SCAN                    (1)
-
-#endif /* ADC_EXAMPLE_MODE == MULTI_CHANNEL */
-
-/* Conversion factor */
-#define MICRO_TO_MILLI_CONV_RATIO        (1000u)
-
-/* Acquistion time in nanosecond */
-#define ACQUISITION_TIME_NS              (1000u)
-
-/* ADC Scan delay in millisecond */
-#define ADC_SCAN_DELAY_MS                (200u)
-#define NUM_READINGS					 (10)
-
-/* Number of scans every time ADC read is initiated */
-#define NUM_SCAN                         (1)
 
 /* LED blink timer clock value in Hz  */
-#define LED_BLINK_TIMER_CLOCK_HZ         (5000)
-#define PUMP_TIMER_HZ					 (10000)
+#define LED_BLINK_TIMER_CLOCK_HZ          (5000)
 
 /* LED blink timer period value */
-#define LED_BLINK_TIMER_PERIOD           (9999)
+#define LED_BLINK_TIMER_PERIOD            (9999)
 
-/*******************************************************************************
-*       Enumerated Types
-*******************************************************************************/
-/* ADC Channel constants*/
-enum ADC_CHANNELS
-{
-  CHANNEL_0 = 0,
-  CHANNEL_1,
-  NUM_CHANNELS
-} adc_channel;
 
 /******************************************************************************
 * Function Prototypes
 *******************************************************************************/
 static void publisher_init(void);
-static void publisher_deinit(void);
 void print_heap_usage(char *msg);
-
 void timer_init(void);
 /* Multichannel initialization function */
-void adc_multi_channel_init(void);
-
-
-
-
-/* ADC Event Handler */
-static void adc_event_handler(void* arg, cyhal_adc_event_t event);
 
 
 /******************************************************************************
 * Global Variables
 *******************************************************************************/
-
-
 /* FreeRTOS task handle for this task. */
 TaskHandle_t publisher_task_handle;
 
@@ -183,38 +115,17 @@ cy_mqtt_publish_info_t publish_info =
     .dup = false
 };
 
-/* Structure that stores the callback data for the GPIO interrupt event. */
-cyhal_gpio_callback_data_t cb_data =
-{
-    .callback = isr_button_press,
-    .callback_arg = NULL
-};
 
-/* ADC Object */
-cyhal_adc_t adc_obj;
 
-/* ADC Channel 0 Object */
-cyhal_adc_channel_t adc_chan_0_obj;
-cyhal_adc_channel_t adc_chan_1_obj;
+/*******************************************************************************
+* Global Variables
+*******************************************************************************/
 
-/* Default ADC configuration */
-const cyhal_adc_config_t adc_config = {
-        .continuous_scanning=false, // Continuous Scanning is disabled
-        .average_count=1,           // Average count disabled
-        .vref=CYHAL_ADC_REF_VDDA,   // VREF for Single ended channel set to VDDA
-        .vneg=CYHAL_ADC_VNEG_VSSA,  // VNEG for Single ended channel set to VSSA
-        .resolution = 12u,          // 12-bit resolution
-        .ext_vref = NC,             // No connection
-        .bypass_pin = NC };       // No connection
+/* Variable for storing character read from terminal */
+uint8_t uart_read_value;
 
-/* Asynchronous read complete flag, used in Event Handler */
-static bool async_read_complete = false;
-
-/* Variable to store results from multiple channels during asynchronous read*/
-int32_t result_arr[NUM_CHANNELS * NUM_SCAN] = {0};
-
-bool timer_interrupt_flag = false;
-bool led_blink_active_flag = true;
+/* Timer object used for blinking the LED */
+cyhal_timer_t led_blink_timer;
 
 /* Variable for storing character read from terminal */
 uint8_t uart_read_value;
@@ -223,36 +134,22 @@ uint8_t uart_read_value;
 cyhal_timer_t led_blink_timer;
 cyhal_timer_t pump_timer;
 
+// FLAGS
 bool EC_active = false;
 bool pH_active = true;
+bool timer_interrupt_flag = false;
+bool led_blink_active_flag = true;
+
+// timer increment variables
 int timerCount = 0;
-
-
 int pumpCountUp = 0;
-
-
-
-#if ADC_EXAMPLE_MODE == MULTI_CHANNEL
-
-/* Asynchronous read complete flag, used in Event Handler */
-static bool async_read_complete = false;
-
-/* ADC Channel 1 Object */
-cyhal_adc_channel_t adc_chan_1_obj;
-
-/* Variable to store results from multiple channels during asynchronous read*/
-int32_t result_arr[NUM_CHANNELS * NUM_SCAN] = {0};
-
-#endif /* ADC_EXAMPLE_MODE == MULTI_CHANNEL */
 
 /******************************************************************************
  * Function Name: publisher_task
  ******************************************************************************
  * Summary:
- *  Task that sets up the user button GPIO for the publisher and publishes 
- *  MQTT messages to the broker. The user button init and deinit operations,
- *  and the MQTT publish operation is performed based on commands sent by other
- *  tasks and callbacks over a message queue.
+ *  Initializes GPIO pins and calls publisher_init() which initializes ADC and timer.
+ *  MQTT publish is performed based on timer sending a message to the RTOS queue
  *
  * Parameters:
  *  void *pvParameters : Task parameter defined during task creation (unused)
@@ -274,45 +171,15 @@ void publisher_task(void *pvParameters)
     /* To avoid compiler warnings */
     (void) pvParameters;
 
-    /* Print message */
-    /* \x1b[2J\x1b[;H - ANSI ESC sequence for clear screen */
-    //printf("\x1b[2J\x1b[;H");
-    printf("-----------------------------------------------------------\r\n");
-    printf("HAL: ADC using HAL\r\n");
-    printf("-----------------------------------------------------------\r\n\n");
-
     /* Initialize and set-up the user button GPIO. */
     publisher_init();
-
-    /* Update ADC configuration */
-    result = cyhal_adc_configure(&adc_obj, &adc_config);
-    if(result != CY_RSLT_SUCCESS)
-    {
-        printf("ADC configuration update failed. Error: %ld\n", (long unsigned int)result);
-        CY_ASSERT(0);
-    }
-    result = cyhal_gpio_init(P12_0, CYHAL_GPIO_DIR_OUTPUT, CYHAL_GPIO_DRIVE_STRONG, true);
-    if(result != CY_RSLT_SUCCESS)
-    {
-        printf("GPIO initialization failed. Error: %ld\n", (long unsigned int)result);
-        CY_ASSERT(0);
-    }
-    result = cyhal_gpio_init(P12_1, CYHAL_GPIO_DIR_OUTPUT, CYHAL_GPIO_DRIVE_STRONG, false);
-    if(result != CY_RSLT_SUCCESS)
-    {
-    	printf("ADC initialization failed. Error: %ld\n", (long unsigned int)result);
-        CY_ASSERT(0);
-    }
-    result = cyhal_gpio_init(P13_4, CYHAL_GPIO_DIR_OUTPUT, CYHAL_GPIO_DRIVE_STRONG, false);
-    if(result != CY_RSLT_SUCCESS)
-    {
-    	printf("ADC initialization failed. Error: %ld\n", (long unsigned int)result);
-        CY_ASSERT(0);
-    }
+    gpio_init();
 
     /* Create a message queue to communicate with other tasks and callbacks. */
     publisher_task_q = xQueueCreate(PUBLISHER_TASK_QUEUE_LENGTH, sizeof(publisher_data_t));
 
+    // publisher_task is a task in scheduler, program execution doesn't get stuck in this loop
+    // because it switches between this task and subscriber_task
     while (true)
     {
         /* Wait for commands from other tasks and callbacks. */
@@ -322,15 +189,16 @@ void publisher_task(void *pvParameters)
             {
                 case PUBLISH_MQTT_MSG:
                 {
+                	//call function with timerCount as var
+
                 	// enables pH sensor if EC sensor has activated, pH is on by default.
-                	// will only activate after the first run through, when EC would become active
+                	// will only activate after the first run through, at which point EC would become active
                 	if(timerCount < 6 && EC_active)
                 	{
                 		EC_active = false;
                 		pH_active = true;
                 		cyhal_gpio_write(P12_0, true);
                 		cyhal_gpio_write(P12_1, false);
-                		//printf("pH Initialized\n");
                 		publish_info.topic = MQTT_PUB_TOPIC;
                 		publish_info.topic_len = (sizeof(MQTT_PUB_TOPIC) - 1);
                 	}
@@ -342,7 +210,6 @@ void publisher_task(void *pvParameters)
                 		pH_active = false;
                 		cyhal_gpio_write(P12_0, false);
                 		cyhal_gpio_write(P12_1, true);
-                		//printf("EC Initialized\n");
                 		publish_info.topic = MQTT_PUB_TOPIC_TWO;
                 		publish_info.topic_len = (sizeof(MQTT_PUB_TOPIC_TWO) - 1);
                 	}
@@ -352,8 +219,6 @@ void publisher_task(void *pvParameters)
                 	{
                 		timerCount = 0;
                 	}
-                	/* Variable to capture return value of functions */
-                	cy_rslt_t result;
 
                     /* Variable to store ADC conversion result from channel 0 */
                	    int32_t adc_result_0 = 0;
@@ -363,13 +228,14 @@ void publisher_task(void *pvParameters)
 
                	    /* Initiate an asynchronous read operation. The event handler will be called
                	     * when it is complete. */
-               	    result = cyhal_adc_read_async_uv(&adc_obj, NUM_SCAN, result_arr);
+               	    result = result_return();
                	    if(result != CY_RSLT_SUCCESS)
                	    {
                	        printf("ADC async read failed. Error: %ld\n", (long unsigned int)result);
                	        CY_ASSERT(0);
                	    }
 
+               	    // if pumpSeconds topic has been written to, activate this block of code
                	    if(pumpsOn == 1)
                	     {
                	     	cyhal_gpio_write(P13_4, true);
@@ -387,15 +253,16 @@ void publisher_task(void *pvParameters)
                	     * microvolts. Convert it millivolts and print input voltage
                	     *
                	     */
-                    adc_result_0 = result_arr[CHANNEL_0] / MICRO_TO_MILLI_CONV_RATIO;
-                	adc_result_1 = result_arr[CHANNEL_1] / MICRO_TO_MILLI_CONV_RATIO;
-               	    /* Clear async read complete flag */
-               	    async_read_complete = false;
+                    adc_result_0 = channel0_return();
+                	adc_result_1 = channel1_return();
+
 
 
                     /* Publish the data received over the message queue. */
                 	//int32_t adc_result_0 = cyhal_adc_read_uv(&adc_chan_0_obj) / MICRO_TO_MILLI_CONV_RATIO;
                 	char* buffer[20];
+
+                	// Depending on flag a certain value is written
                 	if(EC_active)
                 	{
                 		sprintf(buffer, "%d", adc_result_1);
@@ -429,16 +296,15 @@ void publisher_task(void *pvParameters)
                     break;
                 }
             }
-        }
-    }
-}
+        } // end of if
+    } // end of while loop
+} // end of publisher_task function
 
 /******************************************************************************
  * Function Name: publisher_init
  ******************************************************************************
  * Summary:
- *  Function that initializes and sets-up the user button GPIO pin along with  
- *  its interrupt.
+ *  Function that initializes and sets-up the ADC and timer
  * 
  * Parameters:
  *  void
@@ -448,28 +314,19 @@ void publisher_task(void *pvParameters)
  *
  ******************************************************************************/
 
-/*//\
- * Change this to be adc initialization. Examine event to see if there will be any issues with a timer
- * acting as the enable/disable as opposed to button press.
- * CYBSP_USER_BTN is the user button
- *
- */
 static void publisher_init(void)
 {
 	// Initialize channel 0
 	adc_multi_channel_init();
 	timer_init();
-
 }
 
 /******************************************************************************
- * Function Name: isr_button_press
+ * Function Name: publish_timer
  ******************************************************************************
  * Summary:
- *  GPIO interrupt service routine. This function detects button
- *  presses and sends the publish command along with the data to be published 
- *  to the publisher task over a message queue. Based on the current device 
- *  state, the publish data is set so that the device state gets toggled.
+ *  Timer ISR. Sends publish command to message queue and increment timerCount
+ *  variable used to control EC and pH switching in publisher_task()
  *
  * Parameters:
  *  void *callback_arg : pointer to variable passed to the ISR (unused)
@@ -483,22 +340,34 @@ static void publisher_init(void)
 static void publish_timer(void *callback_arg, cyhal_timer_event_t event)
 {
 	BaseType_t xHigherPriorityTaskWoken = pdFALSE;
-	    publisher_data_t publisher_q_data;
+	publisher_data_t publisher_q_data;
 
-	    /* To avoid compiler warnings */
-	    (void) callback_arg;
-	    (void) event;
+	/* To avoid compiler warnings */
+	(void) callback_arg;
+	(void) event;
 
-	    /* Assign the publish command to be sent to the publisher task. */
-	    // this is how the while loop knows which function to access
-	    publisher_q_data.cmd = PUBLISH_MQTT_MSG;
-	    timerCount++;
+	/* Assign the publish command to be sent to the publisher task. */
+	// this is how the while loop knows which function to access
+	publisher_q_data.cmd = PUBLISH_MQTT_MSG;
+	timerCount++;
 
-	    /* Send the command and data to publisher task over the queue */
-	    xQueueSendFromISR(publisher_task_q, &publisher_q_data, &xHigherPriorityTaskWoken);
-}
+	/* Send the command and data to publisher task over the queue */
+	xQueueSendFromISR(publisher_task_q, &publisher_q_data, &xHigherPriorityTaskWoken);
+} // end of publish_timer function
 
-
+/******************************************************************************
+ * Function Name: timer_init
+ ******************************************************************************
+ * Summary:
+ *  Timer initialization, uses led_blinker_timer configuration
+ *
+ * Parameters:
+ *  void
+ *
+ * Return:
+ *  void
+ *
+ ******************************************************************************/
 void timer_init(void)
  {
     cy_rslt_t result;
@@ -539,97 +408,7 @@ void timer_init(void)
 
     /* Start the timer with the configured settings */
     cyhal_timer_start(&led_blink_timer);
-    printf("Timer initializedV1.3\n");
-}
-
-void adc_multi_channel_init(void)
-{
-    /* Variable to capture return value of functions */
-    cy_rslt_t result;
-
-    /* Initialize ADC. The ADC block which can connect to the channel 0 input pin is selected */
-    result = cyhal_adc_init(&adc_obj, VPLUS_CHANNEL_0, NULL);
-    if(result != CY_RSLT_SUCCESS)
-    {
-        printf("ADC initialization failed. Error: %ld\n", (long unsigned int)result);
-        CY_ASSERT(0);
-    }
-
-    /* ADC channel configuration */
-    const cyhal_adc_channel_config_t channel_config = {
-            .enable_averaging = false,  // Disable averaging for channel
-            .min_acquisition_ns = ACQUISITION_TIME_NS, // Minimum acquisition time set to 1us
-            .enabled = true };          // Sample this channel when ADC performs a scan
-
-    /* Initialize a channel 0 and configure it to scan the channel 0 input pin in single ended mode. */
-    result  = cyhal_adc_channel_init_diff(&adc_chan_0_obj, &adc_obj, VPLUS_CHANNEL_0,
-                                          CYHAL_ADC_VNEG, &channel_config);
-    if(result != CY_RSLT_SUCCESS)
-    {
-        printf("ADC first channel initialization failed. Error: %ld\n", (long unsigned int)result);
-        CY_ASSERT(0);
-    }
-
-    /*
-     * For multichannel configuration use to same channel configuration structure
-     * "channel_config" to configure the second channel.
-     * For second channel to be set to differential mode, two inputs from Pins
-     * channel 1 input pin and channel 1 voltage reference pin are configured to be inputs.
-     *
-     */
-
-    /* Initialize channel 1 in differential mode with VPLUS and VMINUS input pins */
-    result = cyhal_adc_channel_init_diff(&adc_chan_1_obj, &adc_obj, VPLUS_CHANNEL_1,
-                                         VREF_CHANNEL_1, &channel_config);
-    if(result != CY_RSLT_SUCCESS)
-    {
-        printf("ADC second channel initialization failed. Error: %ld\n", (long unsigned int)result);
-        CY_ASSERT(0);
-    }
-
-    /* Register a callback to handle asynchronous read completion */
-     cyhal_adc_register_callback(&adc_obj, &adc_event_handler, result_arr);
-
-     /* Subscribe to the async read complete event to process the results */
-     cyhal_adc_enable_event(&adc_obj, CYHAL_ADC_ASYNC_READ_COMPLETE, CYHAL_ISR_PRIORITY_DEFAULT, true);
-
-     printf("ADC is configured in multichannel configuration.\r\n\n");
-     printf("Channel 0 is configured in single ended mode, connected to the \r\n");
-     printf("channel 0 input pin. Provide input voltage at the channel 0 input pin \r\n");
-     printf("Channel 1 is configured in differential mode, connected to the \r\n");
-     printf("channel 1 input pin and channel 1 voltage reference pin. Provide input voltage at the channel 1 input pin and reference \r\n");
-     printf("voltage at the Channel 1 voltage reference pin \r\n\n");
-}
-
-/*******************************************************************************
- * Function Name: adc_event_handler
- *******************************************************************************
- *
- * Summary:
- *  ADC event handler. This function handles the asynchronous read complete event
- *  and sets the async_read_complete flag to true.
- *
- * Parameters:
- *  void *arg : pointer to result list
- *  cyhal_adc_event_t event : ADC event type
- *
- * Return:
- *  void
- *
- *******************************************************************************/
-static void adc_event_handler(void* arg, cyhal_adc_event_t event)
-{
-    if(0u != (event & CYHAL_ADC_ASYNC_READ_COMPLETE))
-    {
-        /* Set async read complete flag to true */
-        async_read_complete = true;
-    }
-}
-
-
-
-
-
-
+    printf("Timer initialized\n");
+}  // end of timer_init function
 
 /* [] END OF FILE */
