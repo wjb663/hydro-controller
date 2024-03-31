@@ -58,10 +58,10 @@ cyhal_gpio_callback_data_t gpio_pin_callback_data;
 /* Variable for storing character read from terminal */
 uint8_t uart_read_value;
 
-/* Timer object used for blinking the LED */
+/* Timer objects*/
 cyhal_timer_t led_blink_timer;
 cyhal_timer_t pump_timer;
-
+cyhal_timer_t wire_timer;
 
 
 
@@ -73,6 +73,7 @@ void timer_init(void);
 void gpio_init(void);
 static void isr_timer(void *callback_arg, cyhal_timer_event_t event);
 static void isr_pump_timer(void *callback_arg, cyhal_timer_event_t event);
+static void isr_wire_timer(void *callback_arg, cyhal_timer_event_t event);
 static void isr_counter(void *callback_arg, cyhal_gpio_event_t event);
 
 /* Single channel initialization function*/
@@ -80,6 +81,14 @@ void adc_single_channel_init(void);
 
 /* Function to read input voltage from channel 0 */
 void adc_single_channel_process(void);
+
+//Temp Sensor Functions
+int initialize_wire(void);
+void reset_pulse(void);
+void listen(void);
+
+
+
 
 /*******************************************************************************
 * Function Name: main
@@ -268,6 +277,17 @@ void gpio_init(void){
         CY_ASSERT(0);
     }
 
+     /* Initialize GPIO Temperature Sensor Input/Output */
+    result = cyhal_gpio_init(TEMP_PIN, CYHAL_GPIO_DIR_BIDIRECTIONAL,
+                             CYHAL_GPIO_DRIVE_PULLUP, 0);
+
+    /* GPIO init failed. Stop program execution */
+    if (result != CY_RSLT_SUCCESS)
+    {
+        CY_ASSERT(0);
+    }
+
+
     /*Configure Sensor Fet Pins */
     cyhal_gpio_init(PHFET, CYHAL_GPIO_DIR_OUTPUT, CYHAL_GPIO_DRIVE_STRONG, 0);
     cyhal_gpio_init(TDSFET, CYHAL_GPIO_DIR_OUTPUT, CYHAL_GPIO_DRIVE_STRONG, 0);
@@ -322,6 +342,16 @@ void gpio_init(void){
         .value = 0                          /* Initial value of counter */
     };
 
+    const cyhal_timer_cfg_t wire_timer_cfg =
+    {
+        .compare_value = 0,                 /* Timer compare value, not used */
+        .period = WIRE_TIMER_PERIOD,   /* Defines the timer period */
+        .direction = CYHAL_TIMER_DIR_UP,    /* Timer counts up */
+        .is_compare = false,                /* Don't use compare mode */
+        .is_continuous = false,              /* Run timer indefinitely */
+        .value = 0                          /* Initial value of counter */
+    };
+
     /* Initialize the timer object. Does not use input pin ('pin' is NC) and
      * does not use a pre-configured clock source ('clk' is NULL). */
     result = cyhal_timer_init(&led_blink_timer, NC, NULL);
@@ -342,24 +372,39 @@ void gpio_init(void){
         CY_ASSERT(0);
     }
 
+    /* Initialize the timer object. Does not use input pin ('pin' is NC) and
+     * does not use a pre-configured clock source ('clk' is NULL). */
+    result = cyhal_timer_init(&wire_timer, NC, NULL);
+    
+
+    /* timer init failed. Stop program execution */
+    if (result != CY_RSLT_SUCCESS)
+    {
+        CY_ASSERT(0);
+    }
+
     /* Configure timer period and operation mode such as count direction,
        duration */
     cyhal_timer_configure(&led_blink_timer, &led_blink_timer_cfg);
     cyhal_timer_configure(&pump_timer, &pump_timer_cfg);
+    cyhal_timer_configure(&wire_timer, &wire_timer_cfg);
 
     /* Set the frequency of timer's clock source */
     cyhal_timer_set_frequency(&led_blink_timer, LED_BLINK_TIMER_CLOCK_HZ);
     cyhal_timer_set_frequency(&pump_timer, PUMP_TIMER_CLOCK_HZ);
-
+    cyhal_timer_set_frequency(&wire_timer, WIRE_TIMER_CLOCK_HZ);
+    
     /* Assign the ISR to execute on timer interrupt */
     cyhal_timer_register_callback(&led_blink_timer, isr_timer, NULL);
     cyhal_timer_register_callback(&pump_timer, isr_pump_timer, NULL);
+    cyhal_timer_register_callback(&wire_timer, isr_wire_timer, NULL);
 
     /* Set the event on which timer interrupt occurs and enable it */
     cyhal_timer_enable_event(&led_blink_timer, CYHAL_TIMER_IRQ_TERMINAL_COUNT,
                               7, true);
     cyhal_timer_enable_event(&pump_timer, CYHAL_TIMER_IRQ_TERMINAL_COUNT,
                               7, true);
+
     /* Start the timer with the configured settings */
     cyhal_timer_start(&led_blink_timer);
  //   cyhal_timer_start(&pump_timer);
@@ -408,4 +453,11 @@ static void isr_counter(void *callback_arg, cyhal_gpio_event_t event)
     
 }
 
-/* [] END OF FILE */
+void isr_wire_timer(void *callback_arg, cyhal_timer_event_t event)
+{
+    (void) callback_arg;
+    (void) event;
+
+    /* Set the interrupt flag and process it from the main while(1) loop */
+    
+}
