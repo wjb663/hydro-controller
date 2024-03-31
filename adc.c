@@ -4,6 +4,7 @@
 #include "cy_retarget_io.h"
 
 
+void adc_update_config(void);
 
 /*******************************************************************************
 * Global Variables

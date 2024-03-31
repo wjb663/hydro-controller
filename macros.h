@@ -14,7 +14,7 @@
 #define PUMP_TIMER_PERIOD                 (9999)
 
 #define WIRE_TIMER_CLOCK_HZ               (10000)
-#define WIRE_TIMER_PERIOD                 (9999)
+#define WIRE_TIMER_PERIOD                 (5)
 
 #define FLOW_PIN                        P9_1
 #define TEMP_PIN                        P9_0
