@@ -16,6 +16,9 @@
 #define WIRE_TIMER_CLOCK_HZ               (10000)
 #define WIRE_TIMER_PERIOD                 (5)
 
+#define WRITE_TIMER_CLOCK_HZ               (10000)
+#define WRITE_TIMER_PERIOD                 (5)
+
 #define FLOW_PIN                        P9_1
 #define TEMP_PIN                        P9_0
 

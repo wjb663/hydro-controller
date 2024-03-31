@@ -12,6 +12,10 @@
 		"cortex-debug.openocdPath": "${config:modustoolbox.toolsPath}/openocd/bin/openocd.exe",
 		"cortex-debug.JLinkGDBServerPath.windows": "C:/Program Files/SEGGER/JLink/JLinkGDBServerCL.exe",
 		"cortex-debug.JLinkGDBServerPath.osx": "/Applications/SEGGER/JLink/JLinkGDBServerCLExe",
-		"cortex-debug.JLinkGDBServerPath.linux": "JLinkGDBServerCLExe"
+		"cortex-debug.JLinkGDBServerPath.linux": "JLinkGDBServerCLExe",
+		"files.associations": {
+			"cyhal.h": "c",
+			"cybsp.h": "c"
+		}
 	}
 }
