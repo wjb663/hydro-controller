@@ -20,7 +20,12 @@ void adc_single_channel_process(void);
 
 //Temp Sensor Functions
 int initialize_wire(void);
-void write_1(void);
-void write_0(void);
-void read(void);
+void wire_process(void);
+void write_wire(u_int8_t b);
+void write_wire_byte(uint8_t b);
+void read_wire(void);
+void print_wire(void);
 
+//GPIO 1-Wire ISR
+//It was static, but is "connected"? inside main.c while defined inside tempsensor.c
+void isr_wire(void *callback_arg, cyhal_gpio_event_t event);

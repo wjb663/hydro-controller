@@ -55,6 +55,7 @@
 extern bool timer_interrupt_flag;
 extern bool pump_timer_interrupt_flag;
 extern bool led_blink_active_flag;
+extern bool wire_initialized;
 
 volatile unsigned flow_count = 0;
 cyhal_gpio_callback_data_t gpio_flow_pin_callback_data;
@@ -71,7 +72,6 @@ extern cyhal_timer_t write_timer;
 /* Variable for storing character read from terminal */
 uint8_t uart_read_value;
 
-static void isr_wire(void *callback_arg, cyhal_gpio_event_t event);
 static void isr_counter(void *callback_arg, cyhal_gpio_event_t event);
 
 
@@ -181,21 +181,20 @@ int main(void)
 
                 led_blink_active_flag ^= 1;
 
-                //Start pump
-                cyhal_gpio_toggle(DOSE_PUMP_A);
-                //Start timer
-                cyhal_timer_start(&pump_timer);
+                // //Start pump
+                // cyhal_gpio_toggle(DOSE_PUMP_A);
+                // //Start timer
+                // cyhal_timer_start(&pump_timer);
 
-                //Start 1-Wire
-                initialize_wire();
-
-                for (int i = 0; i < RING_BUFFER_SIZE; i++){
-                    printf("%u", ringBuffer[i]);
-                }
-                printf("\r\nWire\r\n");
+                print_wire();
             }
 
         }
+
+        //Process reading/writing 1-Wire
+        wire_process();
+        
+
         /* Check if timer elapsed (interrupt fired) and toggle the LED */
         if (timer_interrupt_flag)
         {
@@ -211,7 +210,7 @@ int main(void)
             // printf("0\r\n");
             // flow_count = 0;
 
-            adc_single_channel_process();
+            //adc_single_channel_process();
             
         }
 
@@ -295,8 +294,7 @@ void gpio_init(void){
 
     cyhal_gpio_register_callback(TEMP_PIN, 
                                  &gpio_temp_pin_callback_data);
-    cyhal_gpio_enable_event(TEMP_PIN, CYHAL_GPIO_IRQ_BOTH, 
-                                 7u, true);                                 
+    //cyhal_gpio_enable_event(TEMP_PIN, CYHAL_GPIO_IRQ_BOTH, 7u, true);                                 
 }
 
 static void isr_counter(void *callback_arg, cyhal_gpio_event_t event)
