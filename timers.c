@@ -3,6 +3,7 @@
 #include "cy_retarget_io.h"
 #include "macros.h"
 #include "functions.h"
+// #include "TempSensor.c"
 
 
 /* Timer objects*/
@@ -18,7 +19,6 @@ bool wire_initialized = false;
 bool wire_busy = false;
 
 extern volatile unsigned flow_count;
-// extern enum transaction;
 
 static void isr_timer(void *callback_arg, cyhal_timer_event_t event);
 static void isr_pump_timer(void *callback_arg, cyhal_timer_event_t event);
@@ -213,7 +213,6 @@ void isr_wire_timer(void *callback_arg, cyhal_timer_event_t event)
     case CYHAL_TIMER_IRQ_TERMINAL_COUNT:        //Write
         cyhal_gpio_write(TEMP_PIN, 1);
         wire_busy = false;
-        transaction = PRESENSE;
         // cyhal_gpio_toggle(TEMP_PIN);
         break;
     default:

@@ -20,13 +20,15 @@ extern bool wire_initialized;
 bool skip_rom = true;
 bool conversion = true;
 
-volatile enum {
+typedef enum {
     RESET,
     PRESENSE,
     SKIP_ROM,
     CONVERT_T,
     POLL,
-} transaction;
+} transaction_t;
+
+volatile enum transaction transaction;
 
 uint8_t bit = 0;
 
