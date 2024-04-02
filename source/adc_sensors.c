@@ -95,7 +95,7 @@ void adc_multi_channel_init(void)
 
     /* Initialize channel 1 in differential mode with VPLUS and VMINUS input pins */
     result = cyhal_adc_channel_init_diff(&adc_chan_1_obj, &adc_obj, VPLUS_CHANNEL_1,
-                                         VREF_CHANNEL_1, &channel_config);
+                                         CYHAL_ADC_VNEG, &channel_config);
     if(result != CY_RSLT_SUCCESS)
     {
         printf("ADC second channel initialization failed. Error: %ld\n", (long unsigned int)result);
@@ -109,11 +109,6 @@ void adc_multi_channel_init(void)
      cyhal_adc_enable_event(&adc_obj, CYHAL_ADC_ASYNC_READ_COMPLETE, CYHAL_ISR_PRIORITY_DEFAULT, true);
 
      printf("ADC is configured in multichannel configuration.\r\n\n");
-     printf("Channel 0 is configured in single ended mode, connected to the \r\n");
-     printf("channel 0 input pin. Provide input voltage at the channel 0 input pin \r\n");
-     printf("Channel 1 is configured in differential mode, connected to the \r\n");
-     printf("channel 1 input pin and channel 1 voltage reference pin. Provide input voltage at the channel 1 input pin and reference \r\n");
-     printf("voltage at the Channel 1 voltage reference pin \r\n\n");
 
      result = cyhal_adc_configure(&adc_obj, &adc_config);
      if(result != CY_RSLT_SUCCESS)
