@@ -149,6 +149,8 @@ void subscriber_task(void *pvParameters)
                     print_heap_usage("subscriber_task: After updating LED state");
                     break;
                 }
+                default:
+                    break;
             }
         }
     }

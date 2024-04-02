@@ -86,11 +86,6 @@
 /* LED blink timer period value */
 #define LED_BLINK_TIMER_PERIOD            (9999)
 
-//Pin Macros
-#define PH_FET                          (P11_4)
-#define EC_FET                          (P12_3)
-#define PUMP_ONE                        (P9_5)
-
 /******************************************************************************
 * Function Prototypes
 *******************************************************************************/

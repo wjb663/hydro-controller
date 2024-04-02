@@ -28,6 +28,10 @@
 /* Number of scans every time ADC read is initiated */
 #define NUM_SCAN                         (1)
 
+//Pin Macros
+#define PH_FET                          (P11_4)
+#define EC_FET                          (P12_3)
+#define PUMP_ONE                        (P9_5)
 
 void gpio_init();
 
