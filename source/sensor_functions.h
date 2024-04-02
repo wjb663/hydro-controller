@@ -9,7 +9,7 @@
 #define SOURCE_SENSOR_FUNCTIONS_H_
 
 #define VPLUS_CHANNEL_0  (P10_0)
-#define VPLUS_CHANNEL_1  (P10_4)
+#define VPLUS_CHANNEL_1  (P10_3)
 #define VREF_CHANNEL_1   (P10_5)
 
 /* Number of scans every time ADC read is initiated */
