@@ -86,6 +86,10 @@
 /* LED blink timer period value */
 #define LED_BLINK_TIMER_PERIOD            (9999)
 
+//Pin Macros
+#define PH_FET                          (P11_4)
+#define EC_FET                          (P12_3)
+#define PUMP_ONE                        (P9_5)
 
 /******************************************************************************
 * Function Prototypes
@@ -200,8 +204,8 @@ void publisher_task(void *pvParameters)
                 	{
                 		EC_active = false;
                 		pH_active = true;
-                		cyhal_gpio_write(P12_0, true);
-                		cyhal_gpio_write(P12_1, false);
+                		cyhal_gpio_write(PH_FET, true);
+                		cyhal_gpio_write(EC_FET, false);
                 		publish_info.topic = MQTT_PUB_TOPIC;
                 		publish_info.topic_len = (sizeof(MQTT_PUB_TOPIC) - 1);
                 	}
@@ -211,8 +215,8 @@ void publisher_task(void *pvParameters)
                 	{
                 		EC_active = true;
                 		pH_active = false;
-                		cyhal_gpio_write(P12_0, false);
-                		cyhal_gpio_write(P12_1, true);
+                		cyhal_gpio_write(PH_FET, false);
+                		cyhal_gpio_write(EC_FET, true);
                 		publish_info.topic = MQTT_PUB_TOPIC_TWO;
                 		publish_info.topic_len = (sizeof(MQTT_PUB_TOPIC_TWO) - 1);
                 	}
@@ -241,13 +245,13 @@ void publisher_task(void *pvParameters)
                	    // if pumpSeconds topic has been written to, activate this block of code
                	    if(pumpsOn == 1)
                	     {
-               	     	cyhal_gpio_write(P13_4, true);
+               	     	cyhal_gpio_write(PUMP_ONE, true);
                	     	pumpCountUp++;
                	     	if(pumpCountUp == pumpSeconds)
                	     	{
                	     		pumpsOn = 0;
                	     		pumpCountUp = 0;
-               	     		cyhal_gpio_write(P13_4, false);
+               	     		cyhal_gpio_write(PUMP_ONE, false);
                	     	}
                	     }
 
