@@ -287,14 +287,13 @@ void gpio_init(void){
     gpio_flow_pin_callback_data.callback = isr_counter;
     gpio_temp_pin_callback_data.callback = isr_wire;
     
-    cyhal_gpio_register_callback(FLOW_PIN, 
-                                 &gpio_flow_pin_callback_data);
-    cyhal_gpio_enable_event(FLOW_PIN, CYHAL_GPIO_IRQ_RISE, 
-                                 7u, true);
+    cyhal_gpio_register_callback(FLOW_PIN, &gpio_flow_pin_callback_data);
+    cyhal_gpio_enable_event(FLOW_PIN, CYHAL_GPIO_IRQ_RISE, 7u, true);
 
-    cyhal_gpio_register_callback(TEMP_PIN, 
-                                 &gpio_temp_pin_callback_data);
-    //cyhal_gpio_enable_event(TEMP_PIN, CYHAL_GPIO_IRQ_BOTH, 7u, true);                                 
+    cyhal_gpio_register_callback(TEMP_PIN, &gpio_temp_pin_callback_data);
+    cyhal_gpio_enable_event(TEMP_PIN, CYHAL_GPIO_IRQ_BOTH, 7u, true);
+    
+
 }
 
 static void isr_counter(void *callback_arg, cyhal_gpio_event_t event)

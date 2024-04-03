@@ -19,6 +19,8 @@ bool wire_initialized = false;
 bool wire_busy = false;
 
 extern volatile unsigned flow_count;
+extern volatile transaction_t transaction;
+
 
 static void isr_timer(void *callback_arg, cyhal_timer_event_t event);
 static void isr_pump_timer(void *callback_arg, cyhal_timer_event_t event);
@@ -68,10 +70,10 @@ static void isr_write_timer(void *callback_arg, cyhal_timer_event_t event);
 
     const cyhal_timer_cfg_t wire_timer_cfg =
     {
-        .compare_value = 5,                 /* Timer compare value, not used */
+        .compare_value = 0,                 
         .period = WIRE_TIMER_PERIOD,   /* Defines the timer period */
         .direction = CYHAL_TIMER_DIR_UP,    /* Timer counts up */
-        .is_compare = true,                /* Don't use compare mode */
+        .is_compare = false,                /* Don't use compare mode */
         .is_continuous = false,              /* Run timer indefinitely */
         .value = 0                          /* Initial value of counter */
     };
@@ -201,24 +203,11 @@ void isr_wire_timer(void *callback_arg, cyhal_timer_event_t event)
     (void) callback_arg;
     (void) event;
     // cy_rslt_t result;
-    // cyhal_gpio_configure(TEMP_PIN, CYHAL_GPIO_DIR_INPUT, CYHAL_GPIO_DRIVE_PULLUP);
-
-        switch (event)
-    {
-    case CYHAL_TIMER_IRQ_CAPTURE_COMPARE:       //Read
-        // cyhal_gpio_write(TEMP_PIN, 0);
-        read_wire();
-        // cyhal_gpio_read(TEMP_PIN);
-        break;
-    case CYHAL_TIMER_IRQ_TERMINAL_COUNT:        //Write
-        cyhal_gpio_write(TEMP_PIN, 1);
-        wire_busy = false;
-        // cyhal_gpio_toggle(TEMP_PIN);
-        break;
-    default:
-        break;
-    }
-
+    
+    cyhal_gpio_write(TEMP_PIN, 1);
+    wire_busy = false;
+    transaction++;
+    
 }
 
 void isr_write_timer(void *callback_arg, cyhal_timer_event_t event)

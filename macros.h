@@ -1,6 +1,17 @@
 //Macros for program
 #include "cyhal.h"
 
+
+typedef enum transaction{
+    RESET,
+    PRESENSE,
+    SKIP_ROM,
+    CONVERT_T,
+    POLL,
+} transaction_t;
+
+
+
 /*******************************************************************************
 * Macros
 *******************************************************************************/
@@ -17,8 +28,8 @@
 #define WIRE_TIMER_PERIOD                 (50)
 
 #define WRITE_TIMER_CLOCK_HZ               (1000000)
-#define WRITE_TIMER_PERIOD                 (100)     //~100uSeconds
-#define WRITE_TIMER_SLOT                 (12)     //~100uSeconds
+#define WRITE_TIMER_PERIOD                 (100)  
+#define WRITE_TIMER_SLOT                 (12)     
 
 
 #define FLOW_PIN                        P9_1

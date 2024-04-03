@@ -20,25 +20,20 @@ extern bool wire_initialized;
 bool skip_rom = true;
 bool conversion = true;
 
-typedef enum {
-    RESET,
-    PRESENSE,
-    SKIP_ROM,
-    CONVERT_T,
-    POLL,
-} transaction_t;
-
-volatile enum transaction transaction;
+volatile transaction_t transaction;
 
 uint8_t bit = 0;
 
 
 
 int initialize_wire(void){
+
     for (int i = 0; i < RING_BUFFER_SIZE; i++){ringBuffer[i] = 1;}
+    //Reset pulse
     cyhal_gpio_write(TEMP_PIN, 0);
     cyhal_timer_start(&wire_timer);
     wire_busy = true;
+
     return 0;
 }
 
@@ -84,6 +79,8 @@ void print_wire(void){
     printf("\r\nWire\r\n");
 }
 
+//wire_process
+//function to be called in main loop
 void wire_process(void){
 
     switch (transaction)
@@ -93,26 +90,21 @@ void wire_process(void){
         initialize_wire();
         break;
     case PRESENSE:
-        if(ringTail != ringHead){
-            if (ringTail >= RING_BUFFER_SIZE){ringTail = 0;}
-            if (ringBuffer[1] == 0){
-                print_wire();
-                break;
-            }
+        if (wire_busy){break;}
+        cyhal_timer_start(&wire_timer);
+        wire_busy = true;
+        // if(ringTail != ringHead){
+        //     if (ringTail >= RING_BUFFER_SIZE){ringTail = 0;}
+        //     if (ringBuffer[1] == 0){
+        //         print_wire();
+        //         break;
+        //     }
 
-            if (!wire_busy){
-                wire_busy = true;
-                cyhal_timer_start(&wire_timer);
-            }
-            // if (ringBuffer[ringTail++] == 0){
-            //     transaction++;
-            //     printf("Wire Initialized\r\n");
-            // }
-            // else if (!wire_busy){
-            //     // cyhal_timer_reset(&write_timer);
-            //     // cyhal_timer_start(&write_timer);
-            // }
-        }
+        //     if (!wire_busy){
+        //         wire_busy = true;
+        //         cyhal_timer_start(&wire_timer);
+        //     }
+        // }
         break;
     case SKIP_ROM:
         if (wire_busy){return;}
@@ -146,14 +138,21 @@ void wire_process(void){
     
 }
 
+//isr_wire
+//gpio interrupt service routine for 1-wire temperature sensor pin.
 void isr_wire(void *callback_arg, cyhal_gpio_event_t event)
 {
     switch (event){
         case CYHAL_GPIO_IRQ_RISE:
-            printf("Wire Rise\r\n");
+            if (transaction == PRESENSE){
+                ringBuffer[1] = cyhal_timer_read(&wire_timer);
+            }
         break;
         case CYHAL_GPIO_IRQ_FALL:
-            printf("Wire Fall\r\n");
+            if (transaction == PRESENSE){
+                ringBuffer[0] = cyhal_timer_read(&wire_timer);
+            }
+            // printf("Wire Fall\r\n");
         break;
             default:
         break;
