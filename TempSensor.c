@@ -33,7 +33,6 @@ int initialize_wire(void){
     cyhal_gpio_write(TEMP_PIN, 0);
     cyhal_timer_start(&wire_timer);
     wire_busy = true;
-
     return 0;
 }
 
@@ -74,7 +73,7 @@ void read_wire(void){
 
 void print_wire(void){
     for (int i = 0; i < RING_BUFFER_SIZE; i++){
-        printf("%u", ringBuffer[i]);
+        printf("%u,", ringBuffer[i]);
     }
     printf("\r\nWire\r\n");
 }
@@ -93,23 +92,13 @@ void wire_process(void){
         if (wire_busy){break;}
         cyhal_timer_start(&wire_timer);
         wire_busy = true;
-        // if(ringTail != ringHead){
-        //     if (ringTail >= RING_BUFFER_SIZE){ringTail = 0;}
-        //     if (ringBuffer[1] == 0){
-        //         print_wire();
-        //         break;
-        //     }
-
-        //     if (!wire_busy){
-        //         wire_busy = true;
-        //         cyhal_timer_start(&wire_timer);
-        //     }
-        // }
         break;
     case SKIP_ROM:
         if (wire_busy){return;}
-        write_wire_byte(skip);
-        break;
+        printf("Wire Initialized\r\n");
+        wire_busy = true;
+        // write_wire_byte(skip);
+        // break;
     case CONVERT_T:
         if (wire_busy){return;}
         write_wire_byte(convert);
@@ -145,12 +134,13 @@ void isr_wire(void *callback_arg, cyhal_gpio_event_t event)
     switch (event){
         case CYHAL_GPIO_IRQ_RISE:
             if (transaction == PRESENSE){
-                ringBuffer[1] = cyhal_timer_read(&wire_timer);
+                // ringBuffer[1] = cyhal_timer_read(&wire_timer);
             }
         break;
         case CYHAL_GPIO_IRQ_FALL:
             if (transaction == PRESENSE){
                 ringBuffer[0] = cyhal_timer_read(&wire_timer);
+                wire_initialized = true;
             }
             // printf("Wire Fall\r\n");
         break;

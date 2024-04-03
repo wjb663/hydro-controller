@@ -154,7 +154,7 @@ static void isr_write_timer(void *callback_arg, cyhal_timer_event_t event);
                               7, true);
     cyhal_timer_enable_event(&pump_timer, CYHAL_TIMER_IRQ_TERMINAL_COUNT,
                               7, true);
-    cyhal_timer_enable_event(&wire_timer, CYHAL_TIMER_IRQ_ALL,
+    cyhal_timer_enable_event(&wire_timer, CYHAL_TIMER_IRQ_TERMINAL_COUNT,
                               7, true); 
     cyhal_timer_enable_event(&write_timer, CYHAL_TIMER_IRQ_ALL,
                               7, true);
@@ -206,7 +206,9 @@ void isr_wire_timer(void *callback_arg, cyhal_timer_event_t event)
     
     cyhal_gpio_write(TEMP_PIN, 1);
     wire_busy = false;
-    transaction++;
+    if (transaction == RESET || wire_initialized){
+        transaction++;
+    }
     
 }
 
