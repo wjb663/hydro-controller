@@ -21,6 +21,9 @@ bool wire_busy = false;
 
 extern volatile unsigned flow_count;
 extern volatile transaction_t transaction;
+extern volatile unsigned ringBuffer[RING_BUFFER_SIZE];
+extern unsigned volatile ringHead;
+extern unsigned volatile ringTail;
 
 
 static void isr_timer(void *callback_arg, cyhal_timer_event_t event);
@@ -273,7 +276,9 @@ void isr_read_timer(void *callback_arg, cyhal_timer_event_t event)
     case CYHAL_TIMER_IRQ_CAPTURE_COMPARE:
         break;
     case CYHAL_TIMER_IRQ_TERMINAL_COUNT:
-        
+        ringBuffer[ringHead++] = cyhal_gpio_read(TEMP_PIN);
+        if (ringHead >= RING_BUFFER_SIZE){ringHead = 0;}
+        wire_busy = false;
         break;
     default:
         break;

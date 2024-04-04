@@ -6,30 +6,34 @@
 
 
 volatile unsigned ringBuffer[RING_BUFFER_SIZE];
-unsigned char skip = 0xCC;
-unsigned char convert = 0x44;
+unsigned char skip = 0xCC;      //Skip ROM
+unsigned char convert = 0x44;   //Start conversion
+unsigned char read = 0xBE;   //Read scratchpad
 
-unsigned ringHead = 0;
-unsigned ringTail = 0;
+unsigned volatile ringHead = 0;
+unsigned volatile ringTail = 0;
 
 extern cyhal_timer_t wire_timer;
 extern cyhal_timer_t write_timer;
+extern cyhal_timer_t read_timer;
 extern bool wire_busy;
 extern bool wire_initialized;
 
+
 bool skip_rom = true;
-bool conversion = true;
+bool conversionComplete = false;
 
 volatile transaction_t transaction;
 
 uint8_t bit = 0;
 uint8_t timeoutCounter = INIT_RETRIES;
+uint16_t binaryTemp = 0;
 
 
 
 int initialize_wire(void){
 
-    for (int i = 0; i < RING_BUFFER_SIZE; i++){ringBuffer[i] = 1;}
+    // for (int i = 0; i < RING_BUFFER_SIZE; i++){ringBuffer[i] = 1;}
     //Reset pulse
     cyhal_gpio_write(TEMP_PIN, 0);
     cyhal_timer_start(&wire_timer);
@@ -37,7 +41,7 @@ int initialize_wire(void){
     return 0;
 }
 
-
+//Not needed
 void write_wire(u_int8_t b){
     cyhal_gpio_write(TEMP_PIN, 0);
     cyhal_timer_start(&write_timer);
@@ -49,11 +53,9 @@ void write_wire_byte(uint8_t data){
     unsigned char temp;
     temp = data>>bit++;
     temp &= 0x01;
-    // write_wire(temp);
     cyhal_gpio_write(TEMP_PIN, 0);
     cyhal_gpio_write(TEMP_PIN, temp);
     cyhal_timer_start(&write_timer);
-
     wire_busy = true;
     if (bit >= 8){
         bit = 0;
@@ -112,26 +114,55 @@ void wire_process(void){
         write_wire_byte(skip);
         break;
     case CONVERT_T:
+        if (conversionComplete){        //Happens after transaction gets reset after temp conversion
+            transaction = SCRATCH;
+            break;
+        }
         if (wire_busy){return;}
-        write_wire_byte(convert);
+        else{write_wire_byte(convert);}
         break;
     case POLL:
-    break;
-        if (ringTail == ringHead){
-            printf("RingBufferTailFault\r\n");
-            break;
-        }
+        if (wire_busy){break;}
         if (ringTail >= RING_BUFFER_SIZE){ringTail = 0;}
-        if (ringBuffer[ringTail++] == 1){
-            transaction++;
-            break;
+        if (ringTail != ringHead){
+            if (ringBuffer[ringTail++] == 1){
+                printf("Temperature Conversion Complete\r\n");
+                ringHead = 0;
+                ringTail = 0;
+                transaction = RESET;
+                conversionComplete = true;
+                break;
+            }
         }
-
-        if (wire_busy){return;}
         cyhal_gpio_write(TEMP_PIN, 0);
         cyhal_gpio_write(TEMP_PIN, 1);
-        cyhal_timer_start(&write_timer);
-        wire_busy = true;
+        cyhal_timer_start(&read_timer);
+        break;
+    case SCRATCH:
+        if (wire_busy){break;}
+        write_wire_byte(read);
+        break;
+    case PARSE:
+        if (wire_busy){break;}
+        cyhal_gpio_write(TEMP_PIN, 0);
+        cyhal_gpio_write(TEMP_PIN, 1);
+        cyhal_timer_start(&read_timer);
+
+        if (ringTail >= RING_BUFFER_SIZE){ringTail = 0;}
+        if (ringTail != ringHead){
+            binaryTemp += ringBuffer[ringTail++] << bit++;
+            if (bit >= REG_SIZE){
+                bit = 0;
+                transaction = DONE;
+                break;
+            }
+        }
+        break;
+    case DONE:
+        printf("Temperature: %u\r\n", binaryTemp);
+        transaction = -1;
+        // transaction = RESET;
+        conversionComplete = false;
         break;
     case ERROR:
         printf("Wire Initialization Failed\r\n");
@@ -157,7 +188,6 @@ void isr_wire(void *callback_arg, cyhal_gpio_event_t event)
         break;
         case CYHAL_GPIO_IRQ_FALL:
             if (transaction == PRESENSE){
-                ringBuffer[0] = cyhal_timer_read(&wire_timer);
                 wire_initialized = true;
             }
             // printf("Wire Fall\r\n");
