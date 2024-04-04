@@ -8,6 +8,7 @@ typedef enum transaction{
     SKIP_ROM,
     CONVERT_T,
     POLL,
+    ERROR,
 } transaction_t;
 
 
@@ -30,6 +31,8 @@ typedef enum transaction{
 #define WRITE_TIMER_CLOCK_HZ               (1000000)
 #define WRITE_TIMER_PERIOD                 (100)  
 #define WRITE_TIMER_SLOT                 (12)     
+
+#define INIT_RETRIES                    (10)
 
 
 #define FLOW_PIN                        P9_1

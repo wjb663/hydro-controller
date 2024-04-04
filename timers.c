@@ -222,9 +222,8 @@ void isr_write_timer(void *callback_arg, cyhal_timer_event_t event)
     switch (event)
     {
     case CYHAL_TIMER_IRQ_CAPTURE_COMPARE:       //Read
-        // cyhal_gpio_write(TEMP_PIN, 0);
-        read_wire();
-        // printf("%lu\r\n", cyhal_timer_read(&write_timer));
+        // cyhal_gpio_write(TEMP_PIN, 1);
+        // wire_busy = false;
         break;
     case CYHAL_TIMER_IRQ_TERMINAL_COUNT:        //Write
         cyhal_gpio_write(TEMP_PIN, 1);

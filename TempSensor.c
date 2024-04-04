@@ -23,6 +23,7 @@ bool conversion = true;
 volatile transaction_t transaction;
 
 uint8_t bit = 0;
+uint8_t timeoutCounter = INIT_RETRIES;
 
 
 
@@ -39,21 +40,26 @@ int initialize_wire(void){
 
 void write_wire(u_int8_t b){
     cyhal_gpio_write(TEMP_PIN, 0);
-    cyhal_gpio_write(TEMP_PIN, b);
     cyhal_timer_start(&write_timer);
+    cyhal_gpio_write(TEMP_PIN, b);
     wire_busy = true;
 }
 
-void write_wire_byte(uint8_t b){
+void write_wire_byte(uint8_t data){
     unsigned char temp;
-    temp = b>>bit++;
+    temp = data>>bit++;
     temp &= 0x01;
-    write_wire(temp);
+    // write_wire(temp);
+    cyhal_gpio_write(TEMP_PIN, 0);
+    cyhal_gpio_write(TEMP_PIN, temp);
+    cyhal_timer_start(&write_timer);
+
+    wire_busy = true;
     if (bit >= 8){
         bit = 0;
         transaction++;
     }
-    // ringBuffer[b] = temp;
+
 }
 
 void read_wire(void){
@@ -90,20 +96,27 @@ void wire_process(void){
         break;
     case PRESENSE:
         if (wire_busy){break;}
+        if (timeoutCounter-- <= 0){
+            transaction = ERROR;
+            break;
+        }
         cyhal_timer_start(&wire_timer);
         wire_busy = true;
         break;
     case SKIP_ROM:
         if (wire_busy){return;}
-        printf("Wire Initialized\r\n");
-        wire_busy = true;
-        // write_wire_byte(skip);
-        // break;
+        if (wire_initialized){
+            printf("Wire Initialized\r\n");
+            wire_initialized = false;
+        }
+        write_wire_byte(skip);
+        break;
     case CONVERT_T:
         if (wire_busy){return;}
         write_wire_byte(convert);
         break;
     case POLL:
+    break;
         if (ringTail == ringHead){
             printf("RingBufferTailFault\r\n");
             break;
@@ -120,6 +133,10 @@ void wire_process(void){
         cyhal_timer_start(&write_timer);
         wire_busy = true;
         break;
+    case ERROR:
+        printf("Wire Initialization Failed\r\n");
+        transaction = -1;
+        break;
     default:
         break;
     }
@@ -135,6 +152,7 @@ void isr_wire(void *callback_arg, cyhal_gpio_event_t event)
         case CYHAL_GPIO_IRQ_RISE:
             if (transaction == PRESENSE){
                 // ringBuffer[1] = cyhal_timer_read(&wire_timer);
+                // cyhal_gpio_enable_event(TEMP_PIN, CYHAL_GPIO_IRQ_BOTH, 7u, false);
             }
         break;
         case CYHAL_GPIO_IRQ_FALL:
