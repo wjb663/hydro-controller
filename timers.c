@@ -11,6 +11,7 @@ cyhal_timer_t led_blink_timer;
 cyhal_timer_t pump_timer;
 cyhal_timer_t wire_timer;
 cyhal_timer_t write_timer;
+cyhal_timer_t read_timer;
 
 bool timer_interrupt_flag = false;
 bool pump_timer_interrupt_flag = false;
@@ -26,6 +27,7 @@ static void isr_timer(void *callback_arg, cyhal_timer_event_t event);
 static void isr_pump_timer(void *callback_arg, cyhal_timer_event_t event);
 static void isr_wire_timer(void *callback_arg, cyhal_timer_event_t event);
 static void isr_write_timer(void *callback_arg, cyhal_timer_event_t event);
+static void isr_read_timer(void *callback_arg, cyhal_timer_event_t event);
 
 /*******************************************************************************
 * Function Name: timer_init
@@ -80,10 +82,20 @@ static void isr_write_timer(void *callback_arg, cyhal_timer_event_t event);
 
         const cyhal_timer_cfg_t write_timer_cfg =
     {
-        .compare_value = WRITE_TIMER_SLOT,                 /* Timer compare value */
+        .compare_value = 0,                 /* Timer compare value */
         .period = WRITE_TIMER_PERIOD,       /* Defines the timer period */
         .direction = CYHAL_TIMER_DIR_UP,    /* Timer counts up */
-        .is_compare = true,                /*  use compare mode */
+        .is_compare = false,                /*  use compare mode */
+        .is_continuous = false,              
+        .value = 0                          /* Initial value of counter */
+    };
+
+        const cyhal_timer_cfg_t read_timer_cfg =
+    {
+        .compare_value = 0,                 /* Timer compare value */
+        .period = READ_TIMER_PERIOD,       /* Defines the timer period */
+        .direction = CYHAL_TIMER_DIR_UP,    /* Timer counts up */
+        .is_compare = false,                /*  use compare mode */
         .is_continuous = false,              
         .value = 0                          /* Initial value of counter */
     };
@@ -130,34 +142,45 @@ static void isr_write_timer(void *callback_arg, cyhal_timer_event_t event);
         CY_ASSERT(0);
     }
 
+        /* Initialize the timer object. Does not use input pin ('pin' is NC) and
+     * does not use a pre-configured clock source ('clk' is NULL). */
+    result = cyhal_timer_init(&read_timer, NC, NULL);
+    
+
+    /* timer init failed. Stop program execution */
+    if (result != CY_RSLT_SUCCESS)
+    {
+        CY_ASSERT(0);
+    }
+
     /* Configure timer period and operation mode such as count direction,
        duration */
     cyhal_timer_configure(&led_blink_timer, &led_blink_timer_cfg);
     cyhal_timer_configure(&pump_timer, &pump_timer_cfg);
     cyhal_timer_configure(&wire_timer, &wire_timer_cfg);
     cyhal_timer_configure(&write_timer, &write_timer_cfg);
+    cyhal_timer_configure(&read_timer, &read_timer_cfg);
 
     /* Set the frequency of timer's clock source */
     cyhal_timer_set_frequency(&led_blink_timer, LED_BLINK_TIMER_CLOCK_HZ);
     cyhal_timer_set_frequency(&pump_timer, PUMP_TIMER_CLOCK_HZ);
     cyhal_timer_set_frequency(&wire_timer, WIRE_TIMER_CLOCK_HZ);
     cyhal_timer_set_frequency(&write_timer, WRITE_TIMER_CLOCK_HZ);
+    cyhal_timer_set_frequency(&read_timer, READ_TIMER_CLOCK_HZ);
     
     /* Assign the ISR to execute on timer interrupt */
     cyhal_timer_register_callback(&led_blink_timer, isr_timer, NULL);
     cyhal_timer_register_callback(&pump_timer, isr_pump_timer, NULL);
     cyhal_timer_register_callback(&wire_timer, isr_wire_timer, NULL);
     cyhal_timer_register_callback(&write_timer, isr_write_timer, NULL);
+    cyhal_timer_register_callback(&read_timer, isr_read_timer, NULL);
 
     /* Set the event on which timer interrupt occurs and enable it */
-    cyhal_timer_enable_event(&led_blink_timer, CYHAL_TIMER_IRQ_TERMINAL_COUNT,
-                              7, true);
-    cyhal_timer_enable_event(&pump_timer, CYHAL_TIMER_IRQ_TERMINAL_COUNT,
-                              7, true);
-    cyhal_timer_enable_event(&wire_timer, CYHAL_TIMER_IRQ_TERMINAL_COUNT,
-                              7, true); 
-    cyhal_timer_enable_event(&write_timer, CYHAL_TIMER_IRQ_ALL,
-                              7, true);
+    cyhal_timer_enable_event(&led_blink_timer, CYHAL_TIMER_IRQ_TERMINAL_COUNT, 7, true);
+    cyhal_timer_enable_event(&pump_timer, CYHAL_TIMER_IRQ_TERMINAL_COUNT, 7, true);
+    cyhal_timer_enable_event(&wire_timer, CYHAL_TIMER_IRQ_TERMINAL_COUNT, 7, true); 
+    cyhal_timer_enable_event(&write_timer, CYHAL_TIMER_IRQ_ALL, 7, true);
+    cyhal_timer_enable_event(&read_timer, CYHAL_TIMER_IRQ_TERMINAL_COUNT, 7, true); 
 
     /* Start the timer with the configured settings */
     cyhal_timer_start(&led_blink_timer);
@@ -233,6 +256,26 @@ void isr_write_timer(void *callback_arg, cyhal_timer_event_t event)
     default:
         // cyhal_gpio_toggle(TEMP_PIN);
         
+        break;
+    }
+
+}
+
+void isr_read_timer(void *callback_arg, cyhal_timer_event_t event)
+{
+    (void) callback_arg;
+    (void) event;
+    
+    
+
+    switch (event)
+    {
+    case CYHAL_TIMER_IRQ_CAPTURE_COMPARE:
+        break;
+    case CYHAL_TIMER_IRQ_TERMINAL_COUNT:
+        
+        break;
+    default:
         break;
     }
 
