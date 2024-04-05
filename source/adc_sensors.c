@@ -4,7 +4,7 @@
 #include "cybsp.h"
 #include "cy_retarget_io.h"
 #include "cyhal_adc.h"
-#include "sensor_functions.h"
+#include "functions.h"
 
 /* ADC Object */
 cyhal_adc_t adc_obj;

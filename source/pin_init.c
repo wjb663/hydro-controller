@@ -2,7 +2,7 @@
 #include "cyhal.h"
 #include "cybsp.h"
 #include "cy_retarget_io.h"
-#include "sensor_functions.h"
+#include "functions.h"
 
 void gpio_init()
 {

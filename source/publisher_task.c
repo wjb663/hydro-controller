@@ -60,7 +60,7 @@
 #include "cy_mqtt_api.h"
 #include "cy_retarget_io.h"
 
-#include "sensor_functions.h"
+#include "functions.h"
 
 /******************************************************************************
 * Macros
