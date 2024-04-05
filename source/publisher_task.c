@@ -89,9 +89,9 @@
 /******************************************************************************
 * Function Prototypes
 *******************************************************************************/
-static void publisher_init(void);
+// static void publisher_init(void);
 void print_heap_usage(char *msg);
-void timer_init(void);
+// void timer_init(void);
 /* Multichannel initialization function */
 
 
@@ -174,8 +174,12 @@ void publisher_task(void *pvParameters)
     (void) pvParameters;
 
     /* Initialize and set-up the user button GPIO. */
-    publisher_init();
+    // publisher_init();    //Removed, inits below
+    	// Initialize channel 0
+	adc_multi_channel_init();
+	timer_init();
     gpio_init();
+    
 
     /* Create a message queue to communicate with other tasks and callbacks. */
     publisher_task_q = xQueueCreate(PUBLISHER_TASK_QUEUE_LENGTH, sizeof(publisher_data_t));
@@ -302,115 +306,5 @@ void publisher_task(void *pvParameters)
     } // end of while loop
 } // end of publisher_task function
 
-/******************************************************************************
- * Function Name: publisher_init
- ******************************************************************************
- * Summary:
- *  Function that initializes and sets-up the ADC and timer
- * 
- * Parameters:
- *  void
- *
- * Return:
- *  void
- *
- ******************************************************************************/
-
-static void publisher_init(void)
-{
-	// Initialize channel 0
-	adc_multi_channel_init();
-	timer_init();
-}
-
-/******************************************************************************
- * Function Name: publish_timer
- ******************************************************************************
- * Summary:
- *  Timer ISR. Sends publish command to message queue and increment timerCount
- *  variable used to control EC and pH switching in publisher_task()
- *
- * Parameters:
- *  void *callback_arg : pointer to variable passed to the ISR (unused)
- *  cyhal_gpio_event_t event : GPIO event type (unused)
- *
- * Return:
- *  void
- *
- ******************************************************************************/
-
-static void publish_timer(void *callback_arg, cyhal_timer_event_t event)
-{
-	BaseType_t xHigherPriorityTaskWoken = pdFALSE;
-	publisher_data_t publisher_q_data;
-
-	/* To avoid compiler warnings */
-	(void) callback_arg;
-	(void) event;
-
-	/* Assign the publish command to be sent to the publisher task. */
-	// this is how the while loop knows which function to access
-	publisher_q_data.cmd = PUBLISH_MQTT_MSG;
-	timerCount++;
-
-	/* Send the command and data to publisher task over the queue */
-	xQueueSendFromISR(publisher_task_q, &publisher_q_data, &xHigherPriorityTaskWoken);
-} // end of publish_timer function
-
-/******************************************************************************
- * Function Name: timer_init
- ******************************************************************************
- * Summary:
- *  Timer initialization, uses led_blinker_timer configuration
- *
- * Parameters:
- *  void
- *
- * Return:
- *  void
- *
- ******************************************************************************/
-void timer_init(void)
- {
-    cy_rslt_t result;
-
-    const cyhal_timer_cfg_t led_blink_timer_cfg =
-    {
-        .compare_value = 0,                 /* Timer compare value, not used */
-        .period = LED_BLINK_TIMER_PERIOD,   /* Defines the timer period */
-        .direction = CYHAL_TIMER_DIR_UP,    /* Timer counts up */
-        .is_compare = false,                /* Don't use compare mode */
-        .is_continuous = true,              /* Run timer indefinitely */
-        .value = 0                          /* Initial value of counter */
-    };
-
-    /* Initialize the timer object. Does not use input pin ('pin' is NC) and
-     * does not use a pre-configured clock source ('clk' is NULL). */
-    result = cyhal_timer_init(&led_blink_timer, NC, NULL);
-
-    /* timer init failed. Stop program execution */
-    if (result != CY_RSLT_SUCCESS)
-    {
-        CY_ASSERT(0);
-    }
-
-    /* Configure timer period and operation mode such as count direction,
-       duration */
-    cyhal_timer_configure(&led_blink_timer, &led_blink_timer_cfg);
-
-    /* Set the frequency of timer's clock source */
-    cyhal_timer_set_frequency(&led_blink_timer, LED_BLINK_TIMER_CLOCK_HZ);
-
-    /* Assign the ISR to execute on timer interrupt */
-    cyhal_timer_register_callback(&led_blink_timer, publish_timer, NULL);
-
-    /* Set the event on which timer interrupt occurs and enable it */
-    cyhal_timer_enable_event(&led_blink_timer, CYHAL_TIMER_IRQ_TERMINAL_COUNT,
-                              7, true);
-
-    /* Start the timer with the configured settings */
-    cyhal_timer_start(&led_blink_timer);
-    printf("Timer initialized\n");
-}  // end of timer_init function
 
 /* [] END OF FILE */
