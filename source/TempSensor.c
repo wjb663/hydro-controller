@@ -31,14 +31,13 @@ uint16_t binaryTemp = 0;
 
 
 
-int initialize_wire(void){
+void initialize_wire(void){
 
     // for (int i = 0; i < RING_BUFFER_SIZE; i++){ringBuffer[i] = 1;}
     //Reset pulse
     cyhal_gpio_write(TEMP_PIN, 0);
     cyhal_timer_start(&wire_timer);
     wire_busy = true;
-    return 0;
 }
 
 //Not needed
@@ -175,37 +174,3 @@ void wire_process(void){
     
 }
 
-//isr_wire
-//gpio interrupt service routine for 1-wire temperature sensor pin.
-void isr_wire(void *callback_arg, cyhal_gpio_event_t event)
-{
-    switch (event){
-        case CYHAL_GPIO_IRQ_RISE:
-            if (transaction == PRESENSE){
-                // ringBuffer[1] = cyhal_timer_read(&wire_timer);
-                // cyhal_gpio_enable_event(TEMP_PIN, CYHAL_GPIO_IRQ_BOTH, 7u, false);
-            }
-        break;
-        case CYHAL_GPIO_IRQ_FALL:
-            if (transaction == PRESENSE){
-                wire_initialized = true;
-            }
-            // printf("Wire Fall\r\n");
-        break;
-            default:
-        break;
-    }
-    (void) callback_arg;
-    (void) event;
-
-    /* Set the interrupt flag and process it from the main while(1) loop */
-    // ringBuffer[ringHead++] = cyhal_gpio_read(TEMP_PIN);
-    // if (ringHead >= RING_BUFFER_SIZE) ringHead = 0;
-    // if (ringBuffer[ringTail++] == 0){
-    //     printf("0\r\n");
-    // }
-    // else
-    // {
-    //     printf("Wire Timer Read\r\n");
-    // }
-}

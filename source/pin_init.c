@@ -8,6 +8,13 @@
 cyhal_gpio_callback_data_t gpio_flow_pin_callback_data;
 cyhal_gpio_callback_data_t gpio_temp_pin_callback_data;
 
+//GPIO 1-Wire ISR
+static void isr_wire(void *callback_arg, cyhal_gpio_event_t event);
+
+extern volatile transaction_t transaction;
+extern bool wire_initialized;
+
+
 void gpio_init()
 {
 	// GPIO INITIALIZATION
@@ -64,4 +71,28 @@ void gpio_init()
 
     cyhal_gpio_register_callback(TEMP_PIN, &gpio_temp_pin_callback_data);
     cyhal_gpio_enable_event(TEMP_PIN, CYHAL_GPIO_IRQ_BOTH, 7u, true);
+}
+
+//isr_wire
+//gpio interrupt service routine for 1-wire temperature sensor pin.
+void isr_wire(void *callback_arg, cyhal_gpio_event_t event)
+{
+    switch (event){
+        case CYHAL_GPIO_IRQ_RISE:
+            if (transaction == PRESENSE){
+                // ringBuffer[1] = cyhal_timer_read(&wire_timer);
+                // cyhal_gpio_enable_event(TEMP_PIN, CYHAL_GPIO_IRQ_BOTH, 7u, false);
+            }
+        break;
+        case CYHAL_GPIO_IRQ_FALL:
+            if (transaction == PRESENSE){
+                wire_initialized = true;
+            }
+            // printf("Wire Fall\r\n");
+        break;
+            default:
+        break;
+    }
+    (void) callback_arg;
+    (void) event;
 }
