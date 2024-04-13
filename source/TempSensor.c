@@ -4,6 +4,10 @@
 #include "cy_retarget_io.h"
 #include "functions.h"
 
+/* FreeRTOS header files */
+#include "FreeRTOS.h"
+#include "task.h"
+
 
 volatile unsigned ringBuffer[RING_BUFFER_SIZE];
 unsigned char skip = 0xCC;      //Skip ROM
@@ -28,6 +32,7 @@ volatile transaction_t transaction;
 uint8_t bit = 0;
 uint8_t timeoutCounter = INIT_RETRIES;
 uint16_t binaryTemp = 0;
+float temp = 0;
 
 
 
@@ -87,90 +92,98 @@ void print_wire(void){
 
 //wire_process
 //function to be called in main loop
-void wire_process(void){
-
-    switch (transaction)
-    {
-    case RESET:
-        if (wire_busy){break;}
-        initialize_wire();
-        break;
-    case PRESENSE:
-        if (wire_busy){break;}
-        if (timeoutCounter-- <= 0){
-            transaction = ERROR;
-            break;
-        }
-        cyhal_timer_start(&wire_timer);
-        wire_busy = true;
-        break;
-    case SKIP_ROM:
-        if (wire_busy){return;}
-        if (wire_initialized){
-            printf("Wire Initialized\r\n");
-            wire_initialized = false;
-        }
-        write_wire_byte(skip);
-        break;
-    case CONVERT_T:
-        if (conversionComplete){        //Happens after transaction gets reset after temp conversion
-            transaction = SCRATCH;
-            break;
-        }
-        if (wire_busy){return;}
-        else{write_wire_byte(convert);}
-        break;
-    case POLL:
-        if (wire_busy){break;}
-        if (ringTail >= RING_BUFFER_SIZE){ringTail = 0;}
-        if (ringTail != ringHead){
-            if (ringBuffer[ringTail++] == 1){
-                printf("Temperature Conversion Complete\r\n");
-                ringHead = 0;
-                ringTail = 0;
-                transaction = RESET;
-                conversionComplete = true;
-                break;
-            }
-        }
-        cyhal_gpio_write(TEMP_PIN, 0);
-        cyhal_gpio_write(TEMP_PIN, 1);
-        cyhal_timer_start(&read_timer);
-        break;
-    case SCRATCH:
-        if (wire_busy){break;}
-        write_wire_byte(read);
-        break;
-    case PARSE:
-        if (wire_busy){break;}
-        cyhal_gpio_write(TEMP_PIN, 0);
-        cyhal_gpio_write(TEMP_PIN, 1);
-        cyhal_timer_start(&read_timer);
-
-        if (ringTail >= RING_BUFFER_SIZE){ringTail = 0;}
-        if (ringTail != ringHead){
-            binaryTemp += ringBuffer[ringTail++] << bit++;
-            if (bit >= REG_SIZE){
-                bit = 0;
-                transaction = DONE;
-                break;
-            }
-        }
-        break;
-    case DONE:
-        printf("Temperature: %u\r\n", binaryTemp);
-        transaction = -1;
-        // transaction = RESET;
-        conversionComplete = false;
-        break;
-    case ERROR:
-        printf("Wire Initialization Failed\r\n");
-        transaction = -1;
-        break;
-    default:
-        break;
-    }
-
+void wire_process(void *pvParameters){
     
+    (void) pvParameters;
+
+    for (;;){
+
+        switch (transaction)
+        {
+        case RESET:
+            if (wire_busy){break;}
+            initialize_wire();
+            break;
+        case PRESENSE:
+            if (wire_busy){break;}
+            if (timeoutCounter-- <= 0){
+                transaction = ERROR;
+                break;
+            }
+            cyhal_timer_start(&wire_timer);
+            wire_busy = true;
+            break;
+        case SKIP_ROM:
+            if (wire_busy){break;}
+            if (wire_initialized){
+                printf("Wire Initialized\r\n");
+                wire_initialized = false;
+            }
+            write_wire_byte(skip);
+            break;
+        case CONVERT_T:
+            if (conversionComplete){        //Happens after transaction gets reset after temp conversion
+                transaction = SCRATCH;
+                break;
+            }
+            if (wire_busy){break;}
+            else{write_wire_byte(convert);}
+            break;
+        case POLL:
+            if (wire_busy){break;}
+            if (ringTail >= RING_BUFFER_SIZE){ringTail = 0;}
+            if (ringTail != ringHead){
+                if (ringBuffer[ringTail++] == 1){
+                    printf("Temperature Conversion Complete\r\n");
+                    ringHead = 0;
+                    ringTail = 0;
+                    transaction = RESET;
+                    conversionComplete = true;
+                    break;
+                }
+            }
+            cyhal_gpio_write(TEMP_PIN, 0);
+            cyhal_gpio_write(TEMP_PIN, 1);
+            cyhal_timer_start(&read_timer);
+            break;
+        case SCRATCH:
+            if (wire_busy){break;}
+            write_wire_byte(read);
+            break;
+        case PARSE:
+            if (wire_busy){break;}
+            cyhal_gpio_write(TEMP_PIN, 0);
+            cyhal_gpio_write(TEMP_PIN, 1);
+            cyhal_timer_start(&read_timer);
+
+            if (ringTail >= RING_BUFFER_SIZE){ringTail = 0;}
+            if (ringTail != ringHead){
+                binaryTemp += ringBuffer[ringTail++] << bit++;
+                if (bit >= REG_SIZE){
+                    bit = 0;
+                    temp = binaryTemp * TEMP_CONVERSION;
+                    transaction = DONE;
+                    break;
+                }
+            }
+            break;
+        case DONE:
+
+            printf("Temperature: %f\r\n", temp);
+            transaction = -1;
+            // transaction = RESET;
+            conversionComplete = false;
+            
+            //vTaskDelete(NULL);
+            break;
+        case ERROR:
+            printf("Wire Initialization Failed\r\n");
+            transaction = -1;
+            break;
+        default:
+            break;
+        }
+    }
+        
 }
 

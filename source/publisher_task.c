@@ -123,21 +123,18 @@ cy_mqtt_publish_info_t publish_info =
 /* Variable for storing character read from terminal */
 uint8_t uart_read_value;
 
-/* Timer object used for blinking the LED */
-cyhal_timer_t led_blink_timer;
-
 /* Variable for storing character read from terminal */
 uint8_t uart_read_value;
 
 /* Timer object used for blinking the LED */
-cyhal_timer_t led_blink_timer;
-cyhal_timer_t pump_timer;
+extern cyhal_timer_t led_blink_timer;
+extern cyhal_timer_t pump_timer;
 
 // FLAGS
 bool EC_active = false;
 bool pH_active = true;
-bool timer_interrupt_flag = false;
-bool led_blink_active_flag = true;
+extern bool timer_interrupt_flag;
+extern bool led_blink_active_flag;
 
 // timer increment variables
 int timerCount = 0;
@@ -176,9 +173,9 @@ void publisher_task(void *pvParameters)
     /* Initialize and set-up the user button GPIO. */
     // publisher_init();    //Removed, inits below
     	// Initialize channel 0
-	adc_multi_channel_init();
-	timer_init();
-    gpio_init();
+	// adc_multi_channel_init();
+	// timer_init();
+    // gpio_init();
     
 
     /* Create a message queue to communicate with other tasks and callbacks. */
@@ -262,20 +259,22 @@ void publisher_task(void *pvParameters)
                     adc_result_0 = channel0_return();
                 	adc_result_1 = channel1_return();
 
-
+					//Temperature Sensor Process
+					//wire_process();
 
                     /* Publish the data received over the message queue. */
                 	//int32_t adc_result_0 = cyhal_adc_read_uv(&adc_chan_0_obj) / MICRO_TO_MILLI_CONV_RATIO;
-                	char* buffer[20];
+                	//char* buffer[20];
+					char buffer[20];
 
                 	// Depending on flag a certain value is written
                 	if(EC_active)
                 	{
-                		sprintf(buffer, "%d", adc_result_1);
+                		sprintf(buffer, "%d", (int)adc_result_1);
                 	}
                 	else
                 	{
-                		sprintf(buffer, "%d", adc_result_0);
+                		sprintf(buffer, "%d", (int)adc_result_0);
                 	}
                     publish_info.payload = buffer;
                     publish_info.payload_len = strlen(publish_info.payload);
@@ -301,6 +300,7 @@ void publisher_task(void *pvParameters)
                     print_heap_usage("publisher_task: After publishing an MQTT message");
                     break;
                 }
+				default: break;
             }
         } // end of if
     } // end of while loop

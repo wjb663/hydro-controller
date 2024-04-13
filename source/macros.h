@@ -41,7 +41,7 @@ typedef enum transaction{
 
 #define INIT_RETRIES                    (10)
 #define REG_SIZE                        (16)
-
+#define TEMP_CONVERSION                 (0.0625)
 
 #define FLOW_PIN                        P9_1
 #define TEMP_PIN                        P9_0
