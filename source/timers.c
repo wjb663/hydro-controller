@@ -97,10 +97,10 @@ static void publish_timer(void *callback_arg, cyhal_timer_event_t event);
 
         const cyhal_timer_cfg_t read_timer_cfg =
     {
-        .compare_value = 0,                 /* Timer compare value */
+        .compare_value =READ_TIMER_SLOT,                 /* Timer compare value */
         .period = READ_TIMER_PERIOD,       /* Defines the timer period */
         .direction = CYHAL_TIMER_DIR_UP,    /* Timer counts up */
-        .is_compare = false,                /*  use compare mode */
+        .is_compare = true,                /*  use compare mode */
         .is_continuous = false,              
         .value = 0                          /* Initial value of counter */
     };
@@ -185,7 +185,7 @@ static void publish_timer(void *callback_arg, cyhal_timer_event_t event);
     cyhal_timer_enable_event(&pump_timer, CYHAL_TIMER_IRQ_TERMINAL_COUNT, 7, true);
     cyhal_timer_enable_event(&wire_timer, CYHAL_TIMER_IRQ_TERMINAL_COUNT, 7, true); 
     cyhal_timer_enable_event(&write_timer, CYHAL_TIMER_IRQ_ALL, 7, true);
-    cyhal_timer_enable_event(&read_timer, CYHAL_TIMER_IRQ_TERMINAL_COUNT, 7, true); 
+    cyhal_timer_enable_event(&read_timer, CYHAL_TIMER_IRQ_ALL, 7, true); 
 
     /* Start the timer with the configured settings */
     // cyhal_timer_start(&led_blink_timer);
@@ -268,12 +268,14 @@ void isr_read_timer(void *callback_arg, cyhal_timer_event_t event)
     switch (event)
     {
     case CYHAL_TIMER_IRQ_CAPTURE_COMPARE:
-        break;
-    case CYHAL_TIMER_IRQ_TERMINAL_COUNT:
         ringBuffer[ringHead++] = cyhal_gpio_read(TEMP_PIN);
         if (ringHead >= RING_BUFFER_SIZE){ringHead = 0;}
+        break;
+
+    case CYHAL_TIMER_IRQ_TERMINAL_COUNT:
         wire_busy = false;
         break;
+        
     default:
         break;
     }

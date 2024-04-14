@@ -135,6 +135,7 @@ void wire_process(void *pvParameters){
             }
             cyhal_gpio_write(TEMP_PIN, 0);
             cyhal_gpio_write(TEMP_PIN, 1);
+            wire_busy = true;
             cyhal_timer_start(&read_timer);
             break;
         case SCRATCH:
@@ -145,6 +146,7 @@ void wire_process(void *pvParameters){
             if (wire_busy){break;}
             cyhal_gpio_write(TEMP_PIN, 0);
             cyhal_gpio_write(TEMP_PIN, 1);
+            wire_busy = true;
             cyhal_timer_start(&read_timer);
 
             if (ringTail >= RING_BUFFER_SIZE){ringTail = 0;}
@@ -153,6 +155,7 @@ void wire_process(void *pvParameters){
                 if (bit >= REG_SIZE){
                     bit = 0;
                     temp = binaryTemp * TEMP_CONVERSION;
+                    binaryTemp = 0;
                     transaction = DONE;
                     break;
                 }
