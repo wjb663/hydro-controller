@@ -87,6 +87,7 @@ void isr_wire(void *callback_arg, cyhal_gpio_event_t event)
         case CYHAL_GPIO_IRQ_FALL:
             if (transaction == PRESENSE){
                 wire_initialized = true;
+                transaction++;
             }
             // printf("Wire Fall\r\n");
         break;

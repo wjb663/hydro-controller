@@ -35,7 +35,7 @@ typedef enum transaction{
 #define WRITE_TIMER_PERIOD                 (100)  
 
 #define READ_TIMER_CLOCK_HZ               (1000000)
-#define READ_TIMER_PERIOD                 (10) 
+#define READ_TIMER_PERIOD                 (15) 
 
 #define WRITE_TIMER_SLOT                 (12)     
 

@@ -54,7 +54,6 @@ void adc_single_channel_process(void);
 //Temp Sensor Functions
 void initialize_wire(void);
 void wire_process(void *pvParameters);
-void write_wire(uint8_t b);
 void write_wire_byte(uint8_t data);
 void read_wire(void);
 void print_wire(void);

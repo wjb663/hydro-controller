@@ -226,9 +226,9 @@ void isr_wire_timer(void *callback_arg, cyhal_timer_event_t event)
     
     cyhal_gpio_write(TEMP_PIN, 1);
     wire_busy = false;
-    if (transaction == RESET || wire_initialized){
-        transaction++;
-    }
+    // if (transaction == RESET || wire_initialized){
+    //     transaction++;
+    // }
     
 }
 

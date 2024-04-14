@@ -82,7 +82,7 @@
 
 
 /* LED blink timer clock value in Hz  */
-#define LED_BLINK_TIMER_CLOCK_HZ          (5000)
+// #define LED_BLINK_TIMER_CLOCK_HZ          (5000)
 
 /* LED blink timer period value */
 #define LED_BLINK_TIMER_PERIOD            (9999)
@@ -263,9 +263,6 @@ void publisher_task(void *pvParameters)
                     adc_result_0 = channel0_return();
                 	adc_result_1 = channel1_return();
 
-					//Temperature Sensor Process
-					//wire_process();
-
                     /* Publish the data received over the message queue. */
                 	//int32_t adc_result_0 = cyhal_adc_read_uv(&adc_chan_0_obj) / MICRO_TO_MILLI_CONV_RATIO;
                 	//char* buffer[20];
@@ -283,14 +280,14 @@ void publisher_task(void *pvParameters)
                     publish_info.payload = buffer;
                     publish_info.payload_len = strlen(publish_info.payload);
 
-                    //////printf("\nPublisher: Publishing '%s' on the topic '%s'\n", (char *) publish_info.payload, publish_info.topic);
+                    printf("\nPublisher: Publishing '%s' on the topic '%s'\n", (char *) publish_info.payload, publish_info.topic);
 
                     // handle, publish info (type cy_mqtt_publish_info_t)
                     result = cy_mqtt_publish(mqtt_connection, &publish_info);
 
                     if (result != CY_RSLT_SUCCESS)
                     {
-                        //////printf("  Publisher: MQTT Publish failed with error 0x%0X.\n\n", (int)result);
+                        printf("  Publisher: MQTT Publish failed with error 0x%0X.\n\n", (int)result);
 
                         /* Communicate the publish failure with the the MQTT 
                          * client task.
@@ -300,7 +297,7 @@ void publisher_task(void *pvParameters)
                     }
 
                     // is this the message that's printed after successful MQTT sending?
-                    ////////print_heap_usage("publisher_task: After publishing an MQTT message");
+                    print_heap_usage("publisher_task: After publishing an MQTT message");
                     break;
                 }
 				default: break;

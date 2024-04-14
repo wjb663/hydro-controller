@@ -37,19 +37,9 @@ float temp = 0;
 
 
 void initialize_wire(void){
-
-    // for (int i = 0; i < RING_BUFFER_SIZE; i++){ringBuffer[i] = 1;}
     //Reset pulse
     cyhal_gpio_write(TEMP_PIN, 0);
     cyhal_timer_start(&wire_timer);
-    wire_busy = true;
-}
-
-//Not needed
-void write_wire(u_int8_t b){
-    cyhal_gpio_write(TEMP_PIN, 0);
-    cyhal_timer_start(&write_timer);
-    cyhal_gpio_write(TEMP_PIN, b);
     wire_busy = true;
 }
 
@@ -103,6 +93,7 @@ void wire_process(void *pvParameters){
         case RESET:
             if (wire_busy){break;}
             initialize_wire();
+            transaction++;
             break;
         case PRESENSE:
             if (wire_busy){break;}
