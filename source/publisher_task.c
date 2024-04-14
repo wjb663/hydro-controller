@@ -61,6 +61,7 @@
 #include "cy_retarget_io.h"
 
 #include "functions.h"
+#include "macros.h"
 
 /******************************************************************************
 * Macros
@@ -136,6 +137,8 @@ bool pH_active = true;
 extern bool timer_interrupt_flag;
 extern bool led_blink_active_flag;
 
+extern volatile transaction_t transaction;
+
 // timer increment variables
 int timerCount = 0;
 int pumpCountUp = 0;
@@ -170,7 +173,7 @@ void publisher_task(void *pvParameters)
     /* To avoid compiler warnings */
     (void) pvParameters;
 
-    /* Initialize and set-up the user button GPIO. */
+	cyhal_timer_start(&led_blink_timer);
     // publisher_init();    //Removed, inits below
     	// Initialize channel 0
 	// adc_multi_channel_init();
@@ -221,6 +224,7 @@ void publisher_task(void *pvParameters)
                 	if (timerCount >= 11)
                 	{
                 		timerCount = 0;
+						transaction = RESET;	//Reset temperature sensor
                 	}
 
                     /* Variable to store ADC conversion result from channel 0 */
@@ -279,15 +283,14 @@ void publisher_task(void *pvParameters)
                     publish_info.payload = buffer;
                     publish_info.payload_len = strlen(publish_info.payload);
 
-                    printf("\nPublisher: Publishing '%s' on the topic '%s'\n",
-                           (char *) publish_info.payload, publish_info.topic);
+                    //////printf("\nPublisher: Publishing '%s' on the topic '%s'\n", (char *) publish_info.payload, publish_info.topic);
 
                     // handle, publish info (type cy_mqtt_publish_info_t)
                     result = cy_mqtt_publish(mqtt_connection, &publish_info);
 
                     if (result != CY_RSLT_SUCCESS)
                     {
-                        printf("  Publisher: MQTT Publish failed with error 0x%0X.\n\n", (int)result);
+                        //////printf("  Publisher: MQTT Publish failed with error 0x%0X.\n\n", (int)result);
 
                         /* Communicate the publish failure with the the MQTT 
                          * client task.
@@ -297,7 +300,7 @@ void publisher_task(void *pvParameters)
                     }
 
                     // is this the message that's printed after successful MQTT sending?
-                    print_heap_usage("publisher_task: After publishing an MQTT message");
+                    ////////print_heap_usage("publisher_task: After publishing an MQTT message");
                     break;
                 }
 				default: break;

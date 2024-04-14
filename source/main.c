@@ -126,6 +126,7 @@ int main()
 #endif
     printf("===============================================================\n\n");
 
+    //Interrupts can't trigger before RTOS starts. Otherwise, create startup task for inits.
     adc_multi_channel_init();
 	timer_init();
     gpio_init();
@@ -133,12 +134,12 @@ int main()
     /* Create the MQTT Client task. */
     xTaskCreate(mqtt_client_task, "MQTT Client task", MQTT_CLIENT_TASK_STACK_SIZE, NULL, MQTT_CLIENT_TASK_PRIORITY, NULL);
     
-    // BaseType_t xReturned;
-    // //Create temperature sensor task
-    // xReturned = xTaskCreate(wire_process, "Temperature task", 2048, NULL, 2, NULL);
-    // if (xReturned == pdPASS){
-    //     printf("Temp task created.");
-    // }
+    BaseType_t xReturned;
+    //Create temperature sensor task
+    xReturned = xTaskCreate(wire_process, "Temperature task", 2048, NULL, 1, NULL);
+    if (xReturned == pdPASS){
+        printf("Temp task created.");
+    }
 
     /* Start the FreeRTOS scheduler. */
     vTaskStartScheduler();

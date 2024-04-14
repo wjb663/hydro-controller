@@ -188,7 +188,7 @@ static void publish_timer(void *callback_arg, cyhal_timer_event_t event);
     cyhal_timer_enable_event(&read_timer, CYHAL_TIMER_IRQ_TERMINAL_COUNT, 7, true); 
 
     /* Start the timer with the configured settings */
-    cyhal_timer_start(&led_blink_timer);
+    // cyhal_timer_start(&led_blink_timer);
  //   cyhal_timer_start(&pump_timer);
  }
 
