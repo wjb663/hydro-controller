@@ -14,7 +14,7 @@ cyhal_timer_t write_timer;
 cyhal_timer_t read_timer;
 
 bool timer_interrupt_flag = false;
-bool pump_timer_interrupt_flag = false;
+volatile bool pump_timer_interrupt_flag = false;
 bool led_blink_active_flag = true;
 bool wire_initialized = false;
 bool wire_busy = false;
@@ -25,6 +25,8 @@ extern volatile transaction_t transaction;
 extern volatile unsigned ringBuffer[RING_BUFFER_SIZE];
 extern unsigned volatile ringHead;
 extern unsigned volatile ringTail;
+
+extern volatile bool pumpsBusy;
 
 
 // static void isr_timer(void *callback_arg, cyhal_timer_event_t event);
@@ -165,6 +167,7 @@ static void publish_timer(void *callback_arg, cyhal_timer_event_t event);
     cyhal_timer_configure(&wire_timer, &wire_timer_cfg);
     cyhal_timer_configure(&write_timer, &write_timer_cfg);
     cyhal_timer_configure(&read_timer, &read_timer_cfg);
+    
 
     /* Set the frequency of timer's clock source */
     cyhal_timer_set_frequency(&led_blink_timer, LED_BLINK_TIMER_CLOCK_HZ);
@@ -214,6 +217,7 @@ static void isr_pump_timer(void *callback_arg, cyhal_timer_event_t event)
 
     /* Set the interrupt flag and process it from the main while(1) loop */
     pump_timer_interrupt_flag = true;
+    pumpsBusy = false;
 
 }
 

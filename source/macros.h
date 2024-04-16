@@ -49,7 +49,7 @@ typedef enum transaction{
 
 #define CIRC_PUMP_IN
 
-#define DOSE_PUMP_A                     P9_2
+// #define DOSE_PUMP_A                     P9_2
 
 #define PHFET                           P11_4
 #define TDSFET                          P12_3

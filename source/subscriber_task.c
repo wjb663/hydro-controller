@@ -111,6 +111,11 @@ void print_heap_usage(char *msg);
 
 extern int pumpSeconds;
 extern int pumpsOn;
+extern cyhal_timer_t pump_timer;
+volatile bool pumpsBusy = false;
+extern volatile bool pump_timer_interrupt_flag;
+
+
 
 /******************************************************************************
  * Function Name: subscriber_task
@@ -140,6 +145,12 @@ void subscriber_task(void *pvParameters)
 
     while (true)
     {
+        if (pumpsBusy){break;}
+        if (pump_timer_interrupt_flag){
+            pump_timer_interrupt_flag = false;
+            cyhal_gpio_write(PUMP_ONE, 0);
+        }
+
         if (pdTRUE == xQueueReceive(subscriber_task_q, &subscriber_q_data, portMAX_DELAY))
         {
             switch(subscriber_q_data.cmd)
@@ -149,6 +160,42 @@ void subscriber_task(void *pvParameters)
                     print_heap_usage("subscriber_task: After updating LED state");
                     break;
                 }
+                case PUMP1_SUB_TOPIC:
+                //Command sent with zero, turn off pumps
+                    if (subscriber_q_data.data == 0){
+                        cyhal_gpio_write(PUMP_ONE, 0);
+                    }
+                    else{
+                        pumpsBusy = true;
+                        cyhal_timer_start(&pump_timer);
+                        cyhal_gpio_write(PUMP_ONE, 1);
+                    }
+                    break;
+                case PUMP2_SUB_TOPIC:
+                //Command sent with zero, turn off pumps
+                    if (subscriber_q_data.data == 0){
+                        cyhal_gpio_write(PUMP_ONE, 0);
+                    }
+                    break;
+                case PUMP3_SUB_TOPIC:
+                //Command sent with zero, turn off pumps
+                    if (subscriber_q_data.data == 0){
+                        cyhal_gpio_write(PUMP_ONE, 0);
+                    }                
+                    break;
+                case PUMP4_SUB_TOPIC:
+                //Command sent with zero, turn off pumps
+                    if (subscriber_q_data.data == 0){
+                        cyhal_gpio_write(PUMP_ONE, 0);
+                    }                
+                    break;
+                case PUMP5_SUB_TOPIC:
+                //Command sent with zero, turn off pumps
+                    if (subscriber_q_data.data == 0){
+                        cyhal_gpio_write(PUMP_ONE, 0);
+                    }                
+                    break;
+                                        
                 default:
                     break;
             }
@@ -263,6 +310,10 @@ void mqtt_subscription_callback(cy_mqtt_publish_info_t *received_msg_info)
     	printf("\nPUMPING NOW");
     	printf("\nPump for %d seconds.", pumpSeconds);
     }
+
+    //Populate struct to pass to subscriber task queue.
+    subscriber_q_data.cmd = received_msg_info->topic;
+    subscriber_q_data.data = atoi(received_msg_info->payload);
 
     print_heap_usage("MQTT subscription callback");
 

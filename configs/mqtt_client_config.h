@@ -72,6 +72,11 @@
 #define MQTT_SUB_TOPIC                    "pH_Reading"
 #define MQTT_SUB_TOPIC_TWO				  "EC_Reading"
 #define MQTT_SUB_TOPIC_THREE			  "PumpSecond"
+#define PUMP1_SUB_TOPIC                      '1'
+#define PUMP2_SUB_TOPIC                      '2'
+#define PUMP3_SUB_TOPIC                      '3'
+#define PUMP4_SUB_TOPIC                      '4'
+#define PUMP5_SUB_TOPIC                      '5'
 
 /* Set the QoS that is associated with the MQTT publish, and subscribe messages.
  * Valid choices are 0, 1, and 2. Other values should not be used in this macro.
