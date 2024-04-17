@@ -243,17 +243,17 @@ void publisher_task(void *pvParameters)
                	    }
 
                	    // if pumpSeconds topic has been written to, activate this block of code
-               	    if(pumpsOn == 1)
-               	     {
-               	     	cyhal_gpio_write(PUMP_ONE, true);
-               	     	pumpCountUp++;
-               	     	if(pumpCountUp == pumpSeconds)
-               	     	{
-               	     		pumpsOn = 0;
-               	     		pumpCountUp = 0;
-               	     		cyhal_gpio_write(PUMP_ONE, false);
-               	     	}
-               	     }
+               	    // if(pumpsOn == 1)
+               	    //  {
+               	    //  	cyhal_gpio_write(PUMP_ONE, true);
+               	    //  	pumpCountUp++;
+               	    //  	if(pumpCountUp == pumpSeconds)
+               	    //  	{
+               	    //  		pumpsOn = 0;
+               	    //  		pumpCountUp = 0;
+               	    //  		cyhal_gpio_write(PUMP_ONE, false);
+               	    //  	}
+               	    //  }
 
                	    /*
                	     * Read data from result list, input voltage in the result list is in

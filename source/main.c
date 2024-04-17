@@ -141,12 +141,6 @@ int main()
         printf("Temp task created.\r\n");
     }
 
-    //  /* Create the publisher task and cleanup if the operation fails. */
-    // if (pdPASS != xTaskCreate(pump_task, "Pump task", 1024, NULL, 3, NULL))
-    // {
-    //     printf("Failed to create Pump task!\n");
-    // }
-
     /* Start the FreeRTOS scheduler. */
     vTaskStartScheduler();
 

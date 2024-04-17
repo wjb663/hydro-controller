@@ -75,7 +75,7 @@
 /* Queue length of a message queue that is used to communicate with the 
  * subscriber task.
  */
-#define SUBSCRIBER_TASK_QUEUE_LENGTH            (1u)
+#define SUBSCRIBER_TASK_QUEUE_LENGTH            (2u)
 
 /******************************************************************************
 * Global Variables

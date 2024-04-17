@@ -67,11 +67,13 @@ typedef enum
     SUBSCRIBE_TO_TOPIC,
     UNSUBSCRIBE_FROM_TOPIC,
     UPDATE_DEVICE_STATE
+
 } subscriber_cmd_t;
 
 /* Struct to be passed via the subscriber task queue */
 typedef struct{
-    subscriber_cmd_t cmd;
+    // subscriber_cmd_t cmd;
+    char cmd;
     uint8_t data;
 } subscriber_data_t;
 
