@@ -31,10 +31,36 @@ void gpio_init()
 	    	printf("ADC initialization failed. Error: %ld\n", (long unsigned int)result);
 	        CY_ASSERT(0);
 	}
+
+    //Pump fet pins
 	result = cyhal_gpio_init(PUMP_ONE, CYHAL_GPIO_DIR_OUTPUT, CYHAL_GPIO_DRIVE_STRONG, false);
 	if(result != CY_RSLT_SUCCESS)
 	{
-	    	printf("ADC initialization failed. Error: %ld\n", (long unsigned int)result);
+	    	printf("GPIO initialization failed. Error: %ld\n", (long unsigned int)result);
+	        CY_ASSERT(0);
+	}
+    result = cyhal_gpio_init(PUMP_TWO, CYHAL_GPIO_DIR_OUTPUT, CYHAL_GPIO_DRIVE_STRONG, false);
+	if(result != CY_RSLT_SUCCESS)
+	{
+	    	printf("GPIO initialization failed. Error: %ld\n", (long unsigned int)result);
+	        CY_ASSERT(0);
+	}
+    result = cyhal_gpio_init(PUMP_THREE, CYHAL_GPIO_DIR_OUTPUT, CYHAL_GPIO_DRIVE_STRONG, false);
+	if(result != CY_RSLT_SUCCESS)
+	{
+	    	printf("GPIO initialization failed. Error: %ld\n", (long unsigned int)result);
+	        CY_ASSERT(0);
+	}
+    result = cyhal_gpio_init(PUMP_FOUR, CYHAL_GPIO_DIR_OUTPUT, CYHAL_GPIO_DRIVE_STRONG, false);
+	if(result != CY_RSLT_SUCCESS)
+	{
+	    	printf("GPIO initialization failed. Error: %ld\n", (long unsigned int)result);
+	        CY_ASSERT(0);
+	}
+    result = cyhal_gpio_init(PUMP_FIVE, CYHAL_GPIO_DIR_OUTPUT, CYHAL_GPIO_DRIVE_STRONG, false);
+	if(result != CY_RSLT_SUCCESS)
+	{
+	    	printf("GPIO initialization failed. Error: %ld\n", (long unsigned int)result);
 	        CY_ASSERT(0);
 	}
 

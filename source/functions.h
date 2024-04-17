@@ -28,7 +28,12 @@
 //Pin Macros
 #define PH_FET                          (P11_4)
 #define EC_FET                          (P12_3)
+
 #define PUMP_ONE                        (P9_5)
+#define PUMP_TWO                        (P9_3)
+#define PUMP_THREE                      (P9_2)
+#define PUMP_FOUR                       (P9_7)
+#define PUMP_FIVE                       (P9_6)
 
 void gpio_init();
 

@@ -15,6 +15,7 @@ cyhal_timer_t read_timer;
 
 bool timer_interrupt_flag = false;
 volatile bool pump_timer_interrupt_flag = false;
+volatile unsigned pumpCounter = 0;
 bool led_blink_active_flag = true;
 bool wire_initialized = false;
 bool wire_busy = false;
@@ -216,9 +217,17 @@ static void isr_pump_timer(void *callback_arg, cyhal_timer_event_t event)
     (void) event;
 
     /* Set the interrupt flag and process it from the main while(1) loop */
-    pump_timer_interrupt_flag = true;
-    pumpsBusy = false;
-
+    if (pumpCounter <= 1){
+        pumpsBusy = false;
+        pumpCounter = 0;
+        cyhal_timer_stop(&pump_timer);
+        cyhal_gpio_write(PUMP_ONE, 0);
+        cyhal_gpio_write(PUMP_TWO, 0);
+        cyhal_gpio_write(PUMP_THREE, 0);
+    }
+    else{
+        pumpCounter--;
+    }
 }
 
 

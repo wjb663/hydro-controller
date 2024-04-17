@@ -93,18 +93,52 @@ QueueHandle_t subscriber_task_q;
 uint32_t current_device_state = DEVICE_OFF_STATE;
 
 
+
+
 /* Configure the subscription information structure. */
-static cy_mqtt_subscribe_info_t subscribe_info =
+static cy_mqtt_subscribe_info_t ph_subscribe_info =
 {
     .qos = (cy_mqtt_qos_t) MQTT_MESSAGES_QOS,
     .topic = MQTT_SUB_TOPIC,
     .topic_len = (sizeof(MQTT_SUB_TOPIC) - 1)
 };
 
+/* Configure the subscription information structure. */
+static cy_mqtt_subscribe_info_t ec_subscribe_info =
+{
+    .qos = (cy_mqtt_qos_t) MQTT_MESSAGES_QOS,
+    .topic = MQTT_SUB_TOPIC_TWO,
+    .topic_len = (sizeof(MQTT_SUB_TOPIC_TWO) - 1)
+};
+
+/* Configure the subscription information structure. */
+static cy_mqtt_subscribe_info_t p1_subscribe_info =
+{
+    .qos = (cy_mqtt_qos_t) MQTT_MESSAGES_QOS,
+    .topic = PUMP1_SUB_TOPIC,
+    .topic_len = (sizeof(PUMP1_SUB_TOPIC) - 1)
+};
+
+/* Configure the subscription information structure. */
+static cy_mqtt_subscribe_info_t p2_subscribe_info =
+{
+    .qos = (cy_mqtt_qos_t) MQTT_MESSAGES_QOS,
+    .topic = PUMP2_SUB_TOPIC,
+    .topic_len = (sizeof(PUMP2_SUB_TOPIC) - 1)
+};
+
+/* Configure the subscription information structure. */
+static cy_mqtt_subscribe_info_t p3_subscribe_info =
+{
+    .qos = (cy_mqtt_qos_t) MQTT_MESSAGES_QOS,
+    .topic = PUMP3_SUB_TOPIC,
+    .topic_len = (sizeof(PUMP3_SUB_TOPIC) - 1)
+};
+
 /******************************************************************************
 * Function Prototypes
 *******************************************************************************/
-static void subscribe_to_topic(void);
+static void subscribe_to_topic(cy_mqtt_subscribe_info_t subscribe_info);
 void print_heap_usage(char *msg);
 
 
@@ -114,6 +148,7 @@ extern int pumpsOn;
 extern cyhal_timer_t pump_timer;
 volatile bool pumpsBusy = false;
 extern volatile bool pump_timer_interrupt_flag;
+extern volatile unsigned pumpCounter;
 
 
 
@@ -138,18 +173,22 @@ void subscriber_task(void *pvParameters)
     (void) pvParameters;
 
     /* Subscribe to the specified MQTT topic. */
-    subscribe_to_topic();
+    // subscribe_to_topic(ph_subscribe_info);
+    // subscribe_to_topic(ec_subscribe_info);
+    subscribe_to_topic(p1_subscribe_info);
+    subscribe_to_topic(p2_subscribe_info);
+    subscribe_to_topic(p3_subscribe_info);
 
     /* Create a message queue to communicate with other tasks and callbacks. */
     subscriber_task_q = xQueueCreate(SUBSCRIBER_TASK_QUEUE_LENGTH, sizeof(subscriber_data_t));
 
     while (true)
     {
-        if (pumpsBusy){break;}
-        if (pump_timer_interrupt_flag){
-            pump_timer_interrupt_flag = false;
-            cyhal_gpio_write(PUMP_ONE, 0);
-        }
+        // if (pumpsBusy){break;}
+        // if (pump_timer_interrupt_flag){
+        //     pump_timer_interrupt_flag = false;
+        //     cyhal_gpio_write(PUMP_ONE, 0);
+        // }
 
         if (pdTRUE == xQueueReceive(subscriber_task_q, &subscriber_q_data, portMAX_DELAY))
         {
@@ -160,41 +199,41 @@ void subscriber_task(void *pvParameters)
                     print_heap_usage("subscriber_task: After updating LED state");
                     break;
                 }
-                case PUMP1_SUB_TOPIC:
-                //Command sent with zero, turn off pumps
-                    if (subscriber_q_data.data == 0){
-                        cyhal_gpio_write(PUMP_ONE, 0);
-                    }
-                    else{
-                        pumpsBusy = true;
-                        cyhal_timer_start(&pump_timer);
-                        cyhal_gpio_write(PUMP_ONE, 1);
-                    }
-                    break;
-                case PUMP2_SUB_TOPIC:
-                //Command sent with zero, turn off pumps
-                    if (subscriber_q_data.data == 0){
-                        cyhal_gpio_write(PUMP_ONE, 0);
-                    }
-                    break;
-                case PUMP3_SUB_TOPIC:
-                //Command sent with zero, turn off pumps
-                    if (subscriber_q_data.data == 0){
-                        cyhal_gpio_write(PUMP_ONE, 0);
-                    }                
-                    break;
-                case PUMP4_SUB_TOPIC:
-                //Command sent with zero, turn off pumps
-                    if (subscriber_q_data.data == 0){
-                        cyhal_gpio_write(PUMP_ONE, 0);
-                    }                
-                    break;
-                case PUMP5_SUB_TOPIC:
-                //Command sent with zero, turn off pumps
-                    if (subscriber_q_data.data == 0){
-                        cyhal_gpio_write(PUMP_ONE, 0);
-                    }                
-                    break;
+                // case PUMP1_SUB_TOPIC:
+                // //Command sent with zero, turn off pumps
+                //     if (subscriber_q_data.data == 0){
+                //         cyhal_gpio_write(PUMP_ONE, 0);
+                //     }
+                //     else{
+                //         pumpsBusy = true;
+                //         cyhal_timer_start(&pump_timer);
+                //         cyhal_gpio_write(PUMP_ONE, 1);
+                //     }
+                //     break;
+                // case PUMP2_SUB_TOPIC:
+                // //Command sent with zero, turn off pumps
+                //     if (subscriber_q_data.data == 0){
+                //         cyhal_gpio_write(PUMP_ONE, 0);
+                //     }
+                //     break;
+                // case PUMP3_SUB_TOPIC:
+                // //Command sent with zero, turn off pumps
+                //     if (subscriber_q_data.data == 0){
+                //         cyhal_gpio_write(PUMP_ONE, 0);
+                //     }                
+                //     break;
+                // case PUMP4_SUB_TOPIC:
+                // //Command sent with zero, turn off pumps
+                //     if (subscriber_q_data.data == 0){
+                //         cyhal_gpio_write(PUMP_ONE, 0);
+                //     }                
+                //     break;
+                // case PUMP5_SUB_TOPIC:
+                // //Command sent with zero, turn off pumps
+                //     if (subscriber_q_data.data == 0){
+                //         cyhal_gpio_write(PUMP_ONE, 0);
+                //     }                
+                //     break;
                                         
                 default:
                     break;
@@ -220,7 +259,7 @@ void subscriber_task(void *pvParameters)
  *  void
  *
  ******************************************************************************/
-static void subscribe_to_topic(void)
+static void subscribe_to_topic(cy_mqtt_subscribe_info_t subscribe_info)
 {
     /* Status variable */
     cy_rslt_t result = CY_RSLT_SUCCESS;
@@ -235,30 +274,13 @@ static void subscribe_to_topic(void)
         result = cy_mqtt_subscribe(mqtt_connection, &subscribe_info, SUBSCRIPTION_COUNT);
         if (result == CY_RSLT_SUCCESS)
         {
-            printf("\nMQTT client subscribed to the topic '%.*s' successfully.\n", 
-                    subscribe_info.topic_len, subscribe_info.topic);
-            subscribe_info.topic = MQTT_SUB_TOPIC_TWO;
-            result = cy_mqtt_subscribe(mqtt_connection, &subscribe_info, SUBSCRIPTION_COUNT);
-            if (result == CY_RSLT_SUCCESS)
-            {
-            	printf("\nMQTT client subscribed to the topic '%.*s' successfully.\n",
-                       subscribe_info.topic_len, subscribe_info.topic);
-                // was giving me errors because i didnt change topic_len in struct
-                subscribe_info.topic = MQTT_SUB_TOPIC_THREE;
-                result = cy_mqtt_subscribe(mqtt_connection, &subscribe_info, SUBSCRIPTION_COUNT);
-                if (result == CY_RSLT_SUCCESS)
-                {
-                	printf("\nMQTT client subscribed to the topic '%.*s' successfully.\n",
-                           subscribe_info.topic_len, subscribe_info.topic);
-                    break;
-                }
-             break;
-         }
-         break;
-     }
+            printf("\nMQTT client subscribed to the topic '%.*s' successfully.\n", subscribe_info.topic_len, subscribe_info.topic);
+            break;
+        }
 
         vTaskDelay(pdMS_TO_TICKS(MQTT_SUBSCRIBE_RETRY_INTERVAL_MS));
     }
+    
 
     if (result != CY_RSLT_SUCCESS)
     {
@@ -302,18 +324,57 @@ void mqtt_subscription_callback(cy_mqtt_publish_info_t *received_msg_info)
 
     // if there's an upload to pump seconds topic, convert the payload to int and pass it to extern var payloadTimer
     // payloadTimer is used in publisher_task.c publisher_task() switch statement
-    if (strncmp(received_msg_info->topic, MQTT_SUB_TOPIC_THREE, received_msg_info->topic_len) == 0)
-    {
-    	int payloadTimer = atoi(received_msg_info->payload);
-    	pumpSeconds = payloadTimer;
-    	pumpsOn = 1;
-    	printf("\nPUMPING NOW");
-    	printf("\nPump for %d seconds.", pumpSeconds);
+    // if (strncmp(received_msg_info->topic, MQTT_SUB_TOPIC_THREE, received_msg_info->topic_len) == 0)
+    // {
+    // 	int payloadTimer = atoi(received_msg_info->payload);
+    // 	pumpSeconds = payloadTimer;
+    // 	pumpsOn = 1;
+    // 	printf("\nPUMPING NOW");
+    // 	printf("\nPump for %d seconds.", pumpSeconds);
+    // }
+
+    int payloadInteger = atoi(received_msg_info->payload);
+    //Command sent with zero, turn off pumps
+    if (payloadInteger == 0){
+        pumpsBusy = false;
+        cyhal_gpio_write(PUMP_ONE, 0);
+        cyhal_gpio_write(PUMP_TWO, 0);
+        cyhal_gpio_write(PUMP_THREE, 0);
+        return;
+    }
+    else if (pumpsBusy){return;}
+
+    if (strncmp(received_msg_info->topic, PUMP1_SUB_TOPIC, received_msg_info->topic_len) == 0){
+        cyhal_gpio_write(PUMP_ONE, 1);
     }
 
+    else if (strncmp(received_msg_info->topic, PUMP2_SUB_TOPIC, received_msg_info->topic_len) == 0){
+        cyhal_gpio_write(PUMP_TWO, 1);
+
+    }
+
+    else if (strncmp(received_msg_info->topic, PUMP3_SUB_TOPIC, received_msg_info->topic_len) == 0){
+        cyhal_gpio_write(PUMP_THREE, 1);
+    }
+
+    else if (strncmp(received_msg_info->topic, PUMP4_SUB_TOPIC, received_msg_info->topic_len) == 0){
+        cyhal_gpio_write(PUMP_FOUR, 1);
+
+    }
+
+    else if (strncmp(received_msg_info->topic, PUMP5_SUB_TOPIC, received_msg_info->topic_len) == 0){
+        cyhal_gpio_write(PUMP_FIVE, 1);
+
+    }
+
+    pumpsBusy = true;
+    pumpCounter = payloadInteger;
+    cyhal_timer_reset(&pump_timer);
+    cyhal_timer_start(&pump_timer);
+
     //Populate struct to pass to subscriber task queue.
-    subscriber_q_data.cmd = received_msg_info->topic;
-    subscriber_q_data.data = atoi(received_msg_info->payload);
+    // subscriber_q_data.cmd = received_msg_info->topic;
+    // subscriber_q_data.data = atoi(received_msg_info->payload);
 
     print_heap_usage("MQTT subscription callback");
 
