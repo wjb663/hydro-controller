@@ -224,6 +224,8 @@ static void isr_pump_timer(void *callback_arg, cyhal_timer_event_t event)
         cyhal_gpio_write(PUMP_ONE, 0);
         cyhal_gpio_write(PUMP_TWO, 0);
         cyhal_gpio_write(PUMP_THREE, 0);
+        cyhal_gpio_write(PUMP_FOUR, 0);
+        cyhal_gpio_write(PUMP_FIVE, 0);
     }
     else{
         pumpCounter--;

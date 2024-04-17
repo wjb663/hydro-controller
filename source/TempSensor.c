@@ -32,7 +32,7 @@ volatile transaction_t transaction;
 uint8_t bit = 0;
 uint8_t timeoutCounter = INIT_RETRIES;
 uint16_t binaryTemp = 0;
-float temp = 0;
+float tempCelcius = 0;
 
 
 
@@ -154,7 +154,7 @@ void wire_process(void *pvParameters){
                 binaryTemp += ringBuffer[ringTail++] << bit++;
                 if (bit >= REG_SIZE){
                     bit = 0;
-                    temp = binaryTemp * TEMP_CONVERSION;
+                    tempCelcius = binaryTemp * TEMP_CONVERSION;
                     binaryTemp = 0;
                     transaction = DONE;
                     break;
@@ -163,7 +163,7 @@ void wire_process(void *pvParameters){
             break;
         case DONE:
 
-            printf("Temperature: %f\r\n", temp);
+            printf("Temperature: %f\r\n", tempCelcius);
             transaction = -1;
             // transaction = RESET;
             conversionComplete = false;

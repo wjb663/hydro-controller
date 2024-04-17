@@ -109,12 +109,29 @@ QueueHandle_t publisher_task_q;
 cy_mqtt_publish_info_t publish_info =
 {
     .qos = (cy_mqtt_qos_t) MQTT_MESSAGES_QOS,
-    .topic = MQTT_PUB_TOPIC,
-    .topic_len = (sizeof(MQTT_PUB_TOPIC) - 1),
+    .topic = PH_PUB_TOPIC,
+    .topic_len = (sizeof(PH_PUB_TOPIC) - 1),
     .retain = false,
     .dup = false
 };
-
+/* Structure to store publish message information. */
+cy_mqtt_publish_info_t pumpbusy_publish_info =
+{
+    .qos = (cy_mqtt_qos_t) MQTT_MESSAGES_QOS,
+    .topic = PUMPBUSY_PUB_TOPIC,
+    .topic_len = (sizeof(PUMPBUSY_PUB_TOPIC) - 1),
+    .retain = false,
+    .dup = false
+};
+/* Structure to store publish message information. */
+cy_mqtt_publish_info_t pump1_publish_info =
+{
+    .qos = (cy_mqtt_qos_t) MQTT_MESSAGES_QOS,
+    .topic = PUMP1_PUB_TOPIC,
+    .topic_len = (sizeof(PUMP1_PUB_TOPIC) - 1),
+    .retain = false,
+    .dup = false
+};
 
 
 /*******************************************************************************
@@ -143,8 +160,7 @@ extern volatile transaction_t transaction;
 int timerCount = 0;
 int pumpCountUp = 0;
 
-int pumpsOn = 0;
-int pumpSeconds = 0;
+extern float tempCelcius;
 
 /******************************************************************************
  * Function Name: publisher_task
@@ -179,7 +195,12 @@ void publisher_task(void *pvParameters)
 	// adc_multi_channel_init();
 	// timer_init();
     // gpio_init();
-    
+
+	//Should all be in the removed publisher init or something similar
+	pumpbusy_publish_info.payload = "Ready";
+    pumpbusy_publish_info.payload_len = strlen(pumpbusy_publish_info.payload);
+    //Need to Implement - capture result and check for success
+    cy_mqtt_publish(mqtt_connection, &pumpbusy_publish_info);
 
     /* Create a message queue to communicate with other tasks and callbacks. */
     publisher_task_q = xQueueCreate(PUBLISHER_TASK_QUEUE_LENGTH, sizeof(publisher_data_t));
@@ -195,6 +216,10 @@ void publisher_task(void *pvParameters)
             {
                 case PUBLISH_MQTT_MSG:
                 {
+					/* Publish the data received over the message queue. */
+                	//char* buffer[20];
+					char buffer[20];
+
                 	//call function with timerCount as var
 
                 	// enables pH sensor if EC sensor has activated, pH is on by default.
@@ -205,8 +230,8 @@ void publisher_task(void *pvParameters)
                 		pH_active = true;
                 		cyhal_gpio_write(PH_FET, true);
                 		cyhal_gpio_write(EC_FET, false);
-                		publish_info.topic = MQTT_PUB_TOPIC;
-                		publish_info.topic_len = (sizeof(MQTT_PUB_TOPIC) - 1);
+                		publish_info.topic = PH_PUB_TOPIC;
+                		publish_info.topic_len = (sizeof(PH_PUB_TOPIC) - 1);
                 	}
                 	// enables EC sensor
                 	// if 6 seconds have passed and pH is active start up the EC
@@ -216,15 +241,35 @@ void publisher_task(void *pvParameters)
                 		pH_active = false;
                 		cyhal_gpio_write(PH_FET, false);
                 		cyhal_gpio_write(EC_FET, true);
-                		publish_info.topic = MQTT_PUB_TOPIC_TWO;
-                		publish_info.topic_len = (sizeof(MQTT_PUB_TOPIC_TWO) - 1);
+                		publish_info.topic = EC_PUB_TOPIC_TWO;
+                		publish_info.topic_len = (sizeof(EC_PUB_TOPIC_TWO) - 1);
                 	}
 
                 	// reset timer count so timer can continue
                 	if (timerCount >= 11)
                 	{
                 		timerCount = 0;
+						publish_info.topic = TS_PUB_TOPIC;
+                		publish_info.topic_len = (sizeof(TS_PUB_TOPIC) - 1);
 						transaction = RESET;	//Reset temperature sensor
+						sprintf(buffer, "%2.2f", tempCelcius);
+						publish_info.payload = buffer;
+                    	publish_info.payload_len = strlen(publish_info.payload);
+
+                    	printf("\nPublisher: Publishing '%s' on the topic '%s'\n", (char *) publish_info.payload, publish_info.topic);
+
+                    	// handle, publish info (type cy_mqtt_publish_info_t)
+                    	result = cy_mqtt_publish(mqtt_connection, &publish_info);
+
+						if (result != CY_RSLT_SUCCESS)
+						{
+							printf("  Publisher: MQTT Publish failed with error 0x%0X.\n\n", (int)result);
+
+							/* Communicate the publish failure with the the MQTT client task.*/
+							mqtt_task_cmd = HANDLE_MQTT_PUBLISH_FAILURE;
+							xQueueSend(mqtt_task_q, &mqtt_task_cmd, portMAX_DELAY);
+						}
+						break;
                 	}
 
                     /* Variable to store ADC conversion result from channel 0 */
@@ -242,31 +287,12 @@ void publisher_task(void *pvParameters)
                	        CY_ASSERT(0);
                	    }
 
-               	    // if pumpSeconds topic has been written to, activate this block of code
-               	    // if(pumpsOn == 1)
-               	    //  {
-               	    //  	cyhal_gpio_write(PUMP_ONE, true);
-               	    //  	pumpCountUp++;
-               	    //  	if(pumpCountUp == pumpSeconds)
-               	    //  	{
-               	    //  		pumpsOn = 0;
-               	    //  		pumpCountUp = 0;
-               	    //  		cyhal_gpio_write(PUMP_ONE, false);
-               	    //  	}
-               	    //  }
-
                	    /*
                	     * Read data from result list, input voltage in the result list is in
-               	     * microvolts. Convert it millivolts and print input voltage
-               	     *
+               	     * microvolts. Convert it millivolts
                	     */
                     adc_result_0 = channel0_return();
                 	adc_result_1 = channel1_return();
-
-                    /* Publish the data received over the message queue. */
-                	//int32_t adc_result_0 = cyhal_adc_read_uv(&adc_chan_0_obj) / MICRO_TO_MILLI_CONV_RATIO;
-                	//char* buffer[20];
-					char buffer[20];
 
                 	// Depending on flag a certain value is written
                 	if(EC_active)
@@ -275,7 +301,9 @@ void publisher_task(void *pvParameters)
                 	}
                 	else
                 	{
-                		sprintf(buffer, "%d", (int)adc_result_0);
+						adc_result_0 *= PH_MULT;
+						adc_result_0 += PH_OFFSET;
+                		sprintf(buffer, "%2.2f", (float)adc_result_0 / MICRO_TO_MILLI_CONV_RATIO);
                 	}
                     publish_info.payload = buffer;
                     publish_info.payload_len = strlen(publish_info.payload);

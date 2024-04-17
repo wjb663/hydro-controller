@@ -67,16 +67,22 @@
 
 /********************* MQTT MESSAGE CONFIGURATION MACROS **********************/
 /* The MQTT topics to be used by the publisher and subscriber. */
-#define MQTT_PUB_TOPIC                    "pH_Reading"
-#define MQTT_PUB_TOPIC_TWO				  "EC_Reading"
-#define MQTT_SUB_TOPIC                    "pH_Reading"
-#define MQTT_SUB_TOPIC_TWO				  "EC_Reading"
-#define MQTT_SUB_TOPIC_THREE			  "PumpSecond"
+#define PH_PUB_TOPIC                        "pH_Reading"
+#define EC_PUB_TOPIC_TWO				    "EC_Reading"
+#define TS_PUB_TOPIC				        "Temperature(Celcius)"
+#define PUMPBUSY_PUB_TOPIC                  "Pumps"
+#define PUMP1_PUB_TOPIC                     "PUMP 1"
+#define PUMP2_PUB_TOPIC                     "PUMP 2"
+#define PUMP3_PUB_TOPIC                     "PUMP 3"
+
+#define PH_SUB_TOPIC                      "pH_Reading"
+#define EC_SUB_TOPIC_TWO				  "EC_Reading"
+#define MQTT_SUB_TOPIC_THREE			  "PumpSecond"  //Deprecated
 #define PUMP1_SUB_TOPIC                      "1"
 #define PUMP2_SUB_TOPIC                      "2"
 #define PUMP3_SUB_TOPIC                      "3"
-#define PUMP4_SUB_TOPIC                      "4"
-#define PUMP5_SUB_TOPIC                      "5"
+#define CIRC_SUB_TOPIC                       "C"
+#define EMPTY_SUB_TOPIC                      "E"
 
 /* Set the QoS that is associated with the MQTT publish, and subscribe messages.
  * Valid choices are 0, 1, and 2. Other values should not be used in this macro.

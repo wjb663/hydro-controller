@@ -56,6 +56,9 @@ typedef enum transaction{
 #define PH_CHANNEL                       P10_0
 #define EC_CHANNEL                       P10_3
 
+#define PH_MULT                         (3.5f)
+#define PH_OFFSET                         (400)
+
 /* Conversion factor */
 #define MICRO_TO_MILLI_CONV_RATIO        (1000u)
 

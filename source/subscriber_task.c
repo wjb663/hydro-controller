@@ -94,21 +94,21 @@ uint32_t current_device_state = DEVICE_OFF_STATE;
 
 
 
-
+//Subscribe Info for each sub topic
 /* Configure the subscription information structure. */
-static cy_mqtt_subscribe_info_t ph_subscribe_info =
+static cy_mqtt_subscribe_info_t empty_subscribe_info =
 {
     .qos = (cy_mqtt_qos_t) MQTT_MESSAGES_QOS,
-    .topic = MQTT_SUB_TOPIC,
-    .topic_len = (sizeof(MQTT_SUB_TOPIC) - 1)
+    .topic = EMPTY_SUB_TOPIC,
+    .topic_len = (sizeof(EMPTY_SUB_TOPIC) - 1)
 };
 
 /* Configure the subscription information structure. */
-static cy_mqtt_subscribe_info_t ec_subscribe_info =
+static cy_mqtt_subscribe_info_t circ_subscribe_info =
 {
     .qos = (cy_mqtt_qos_t) MQTT_MESSAGES_QOS,
-    .topic = MQTT_SUB_TOPIC_TWO,
-    .topic_len = (sizeof(MQTT_SUB_TOPIC_TWO) - 1)
+    .topic = CIRC_SUB_TOPIC,
+    .topic_len = (sizeof(CIRC_SUB_TOPIC) - 1)
 };
 
 /* Configure the subscription information structure. */
@@ -135,16 +135,16 @@ static cy_mqtt_subscribe_info_t p3_subscribe_info =
     .topic_len = (sizeof(PUMP3_SUB_TOPIC) - 1)
 };
 
+
+
 /******************************************************************************
 * Function Prototypes
 *******************************************************************************/
 static void subscribe_to_topic(cy_mqtt_subscribe_info_t subscribe_info);
 void print_heap_usage(char *msg);
 
+extern cy_mqtt_publish_info_t pumpbusy_publish_info;
 
-
-extern int pumpSeconds;
-extern int pumpsOn;
 extern cyhal_timer_t pump_timer;
 volatile bool pumpsBusy = false;
 extern volatile bool pump_timer_interrupt_flag;
@@ -173,8 +173,8 @@ void subscriber_task(void *pvParameters)
     (void) pvParameters;
 
     /* Subscribe to the specified MQTT topic. */
-    // subscribe_to_topic(ph_subscribe_info);
-    // subscribe_to_topic(ec_subscribe_info);
+    subscribe_to_topic(empty_subscribe_info);
+    subscribe_to_topic(circ_subscribe_info);
     subscribe_to_topic(p1_subscribe_info);
     subscribe_to_topic(p2_subscribe_info);
     subscribe_to_topic(p3_subscribe_info);
@@ -322,17 +322,6 @@ void mqtt_subscription_callback(cy_mqtt_publish_info_t *received_msg_info)
            (int) received_msg_info->qos,
            (int) received_msg_info->payload_len, (const char *)received_msg_info->payload);
 
-    // if there's an upload to pump seconds topic, convert the payload to int and pass it to extern var payloadTimer
-    // payloadTimer is used in publisher_task.c publisher_task() switch statement
-    // if (strncmp(received_msg_info->topic, MQTT_SUB_TOPIC_THREE, received_msg_info->topic_len) == 0)
-    // {
-    // 	int payloadTimer = atoi(received_msg_info->payload);
-    // 	pumpSeconds = payloadTimer;
-    // 	pumpsOn = 1;
-    // 	printf("\nPUMPING NOW");
-    // 	printf("\nPump for %d seconds.", pumpSeconds);
-    // }
-
     int payloadInteger = atoi(received_msg_info->payload);
     //Command sent with zero, turn off pumps
     if (payloadInteger == 0){
@@ -357,12 +346,13 @@ void mqtt_subscription_callback(cy_mqtt_publish_info_t *received_msg_info)
         cyhal_gpio_write(PUMP_THREE, 1);
     }
 
-    else if (strncmp(received_msg_info->topic, PUMP4_SUB_TOPIC, received_msg_info->topic_len) == 0){
+    else if (strncmp(received_msg_info->topic, CIRC_SUB_TOPIC, received_msg_info->topic_len) == 0){
         cyhal_gpio_write(PUMP_FOUR, 1);
+        cyhal_gpio_write(PUMP_FIVE, 1);
 
     }
 
-    else if (strncmp(received_msg_info->topic, PUMP5_SUB_TOPIC, received_msg_info->topic_len) == 0){
+    else if (strncmp(received_msg_info->topic, EMPTY_SUB_TOPIC, received_msg_info->topic_len) == 0){
         cyhal_gpio_write(PUMP_FIVE, 1);
 
     }
@@ -371,6 +361,11 @@ void mqtt_subscription_callback(cy_mqtt_publish_info_t *received_msg_info)
     pumpCounter = payloadInteger;
     cyhal_timer_reset(&pump_timer);
     cyhal_timer_start(&pump_timer);
+
+    // pumpbusy_publish_info.payload = "Busy";
+    // pumpbusy_publish_info.payload_len = strlen(pumpbusy_publish_info.payload);
+    // //Need to Implement - capture result and check for success
+    // cy_mqtt_publish(mqtt_connection, &pumpbusy_publish_info);
 
     //Populate struct to pass to subscriber task queue.
     // subscriber_q_data.cmd = received_msg_info->topic;
