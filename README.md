@@ -1,6 +1,6 @@
 # 26-Computer-Vision-based-hydroponic-control-system
 
-Navigate to features branch to get the latest version of the files capable of being ran
+Navigate to "features" branch to get the latest version of the files capable of being ran.
 
 ModusToolbox installation link: https://www.infineon.com/cms/en/design-support/tools/sdk/modustoolbox-software/
 
